@@ -66,11 +66,7 @@ class Variable(object):
         self.intervene = False
 
     def __repr__(self):
-        if self._distn is None:
-            return "<{}=?>".format(self.name)
-        if self.intervene:
-            return "<do({})={}>".format(self.name, self._distn)
-        return "<{}={}>".format(self.name, self._distn)
+        return '<{}>'.format(self.name)
 
     def _repr_html_(self):
         return pd.DataFrame(data=self._distn,
@@ -126,7 +122,7 @@ class Equation(object):
             self.lookup[states] = results
 
     def play_using(self, assignments):
-        """Calculate the ouput based on the variable / state assignments"""
+        """Calculate output given variable / state assignments"""
         # Build a tuple of the relevant input states from the set of
         # assignments given.
         states = tuple([assignments[v] for v in self.inputs])
@@ -142,41 +138,38 @@ class Equation(object):
     def __repr__(self):
         return "Equation<{}>".format(self.name)
 
-    def show_mapping(self, output_variable):
-        """Output the lookup in a nice way, per output variable
+    def show_mapping(self):
+        """Output the mapping equation in a nice way
 
         We do this a long-winded way, but it allows pandas to do the nice
         formatting for us. We generate a row for every single possibility of
         input and outputs states of this variable, the use the pivot_table to
-        construct a table for us.
+        construct a table for us with nice row/column headings.
         """
+        # Create a set of dictionaries/lists for each column
+        data = dict([(i_var.name, []) for i_var in self.inputs])
+        data.update({'Output': [], 'State': [], self.name: []})
 
-        # Find the index of the output variable
-        for ovar_index, out_var in enumerate(self.outputs):
-            if out_var is output_variable:
-                break
-        else:
-            raise RuntimeError("Output variable not in equation")
-
-        # These are the results we want
-        results = self.per_state_results[ovar_index]
-
-        # All inputs + one output column
-        data = dict((v.name, []) for v in self.inputs)
-        data[out_var.name] = []
-        data[self.name] = []
-
-        for i_state, o_probs in zip(self.input_states, results):
-            for o_state, pr in enumerate(o_probs):
-                for i_var, s in zip(self.inputs, i_state):
-                    data[i_var.name].append(s)
-                data[out_var.name].append(o_state)
-                data[self.name].append(pr)
-
+        # A very ugly loop to produce all the probabilities in a nice way.
+        # Note that this just reproduces what is already in `self.lookup`. I
+        # just could think of a better way to get nice output.
+        for i_index, i_state in enumerate(self.input_states):
+            for o_var, results in zip(self.outputs, self.per_state_results):
+                for o_state, o_p in enumerate(results[i_index]):
+                    for i_var, s in zip(self.inputs, i_state):
+                        data[i_var.name].append(s)
+                    data['Output'].append(o_var.name)
+                    data['State'].append(o_state)
+                    data[self.name].append(o_p)
         all_data = pd.DataFrame(data=data)
+
+        # The magnificent pivot table function does all the work
         return pd.pivot_table(data=all_data, values=[self.name],
-                              index=[iv.name for iv in self.inputs],
-                              columns=[out_var.name])
+                              index=[i_var.name for i_var in self.inputs],
+                              columns=['Output', 'State'])
+
+    def _repr_html_(self):
+        return self.show_mapping()._repr_html_()
 
 
 class CausalNetwork(object):
@@ -501,12 +494,18 @@ class FullJoint(object):
 
 
 if __name__ == '__main__':
-    def halfr(in1, in2, out1):
-        if in2 == 0:
-            out1[in1] = 1
+
+    def f_and_or(i1, i2, o1, o2):
+        if i1 and i2:
+            o1[1] = 1.0
         else:
-            out1[:] = .5
+            o1[0] = 1.0
+        if i1 or i2:
+            o2[1] = 1.0
+        else:
+            o2[0] = 1.0
 
     c, s, a, k = make_variables('C S A K', 2)
-    p3 = Equation('p3', [c, s], [a], halfr)
-    print p3.show_mapping(a)
+    p3 = Equation('p3', [c, s], [a, k], f_and_or)
+    print p3.per_state_results
+    print p3.show_mapping()
