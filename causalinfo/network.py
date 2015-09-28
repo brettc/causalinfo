@@ -1,4 +1,4 @@
-from itertools import product
+from itertools import product, chain
 import networkx as nx
 import numpy as np
 import pandas as pd
@@ -6,71 +6,89 @@ from util import cartesian
 
 
 class Variable(object):
-    """A discrete named variable, with a distribution over N
-    states.
+    """A discrete variable, with a distribution over N states.
 
-    The variable can be assigned a distribution, but will ignore the
-    assignment if it is currently being 'intervened' with.
+    The variable can be assigned a distribution if is being used as input, or
+    as an intervention. Otherwise the distribution is calculated.
     """
 
-    def __init__(self, name, n_states, distn=None, do=False):
+    def __init__(self, name, n_states, assigned=None):
         """Name the variable, and say how many states it has. Variables start
         off as unassigned.
         """
         assert str(name) == name
         assert name.isalnum()
         self.name = name
-        self.n_states = n_states
 
         # Generate the actual states; this makes it easy to work with.
+        self.n_states = n_states
         self.states = range(n_states)
-        self.intervene = False
 
-        # By default, everything gets a uniform distribution
-        if distn is None:
-            distn = np.ones(self.n_states) / float(self.n_states)
+        # We store two distributions here. One is assigned, and used for input
+        # variables and interventions. The other distribution is calculated
+        # during the evaluation of the causal graph.
+        if assigned is not None:
+            self.assigned = self._check_distribution(assigned)
+        else:
+            self.assigned = None
+        self.calculated = np.zeros(self.n_states)
 
-        self.assign(distn, do)
+        self.use_assigned = False
 
-    # You can't assign this, and it is readonly.
     @property
-    def distribution(self):
-        return self._distn
+    def current_distribution(self):
+        """Get the current distribution
 
-    def assign_uniform(self, do=False):
-        self.assign(np.ones(self.n_states) / float(self.n_states), do)
+        This depends on how we're using the variable. It could be as input, or
+        as an intervention.
+        """
+        if self.use_assigned:
+            assert self.assigned is not None
+            return self.assigned
 
-    def assign_from_joint(self, full_joint, do=False):
-        self.assign(full_joint.joint(self).values.ravel(), do=do)
+        if not np.isclose(self.calculated.sum(), 1.0):
+            raise ValueError("The distribution of {}"
+                             " does not sum to 1.0".format(self.name))
+        return self.calculated
 
-    def assign(self, distn, do=False):
-        # Have we been "intervened" on?  If we have then, we've been assigned
-        # a "do" value, and self.intervene is True. Unless this current value
-        # overrides it (by setting do), then just return leaving the
-        # intervened value set.
-        if self.intervene and not do:
-            return
+    def assign_uniform(self):
+        self.assign(np.ones(self.n_states) / float(self.n_states))
 
-        # Note: this makes a copy if it already an array
-        distn = np.array(distn, dtype=float)
-        assert distn.shape == (self.n_states,)
-        assert np.isclose(distn.sum(), 1.0)
+    def assign_from_joint(self, full_joint):
+        self.assign(full_joint.joint(self).values.ravel())
 
+    def _check_distribution(self, distn):
+        """Various checks to make sure nothing silly is happening"""
+        # Note: this makes a copy if it already an array. Which is good, as we
+        # want to make it unwriteable.
+        np_distn = np.array(distn, dtype=float)
+        assert np_distn.shape == (self.n_states,)
+        assert np.isclose(np_distn.sum(), 1.0)
+
+        # Prevent accidentally screwing with this...
+        np_distn.flags.writeable = False
+        return np_distn
+
+    def assign(self, distn):
         # Make it readonly. Then we can safely reference it from outside.
-        distn.flags.writeable = False
-        self._distn = distn
+        self.assigned = self._check_distribution(distn)
 
-        self.intervene = do
+    def clear(self):
+        self.assigned = None
 
-    def reset(self):
-        self.intervene = False
+    def calculate(self, distn):
+        # Here, we assign the distribution
+        self.calculated = self._check_distribution(distn)
 
     def __repr__(self):
         return '<{}>'.format(self.name)
 
     def _repr_html_(self):
-        return pd.DataFrame(data=self._distn,
-                            columns=[self.name])._repr_html_()
+        if self.assigned is not None:
+            data = self.assigned
+        else:
+            data = ['?' for _ in self.states]
+        return pd.DataFrame(data=data, columns=[self.name])._repr_html_()
 
 
 def make_variables(strings, n_states):
@@ -133,12 +151,12 @@ class Equation(object):
         # Now, apply the results to the output variables. Note that this is
         # ignored if the variable is currently being manipulated
         for v, r in zip(self.outputs, results):
-            v.assign(r)
+            v.calculate(r)
 
     def __repr__(self):
         return "Equation<{}>".format(self.name)
 
-    def show_mapping(self):
+    def mapping_table(self):
         """Output the mapping equation in a nice way
 
         We do this a long-winded way, but it allows pandas to do the nice
@@ -169,7 +187,7 @@ class Equation(object):
                               columns=['Output', 'State'])
 
     def _repr_html_(self):
-        return self.show_mapping()._repr_html_()
+        return self.mapping_table()._repr_html_()
 
 
 class CausalNetwork(object):
@@ -241,17 +259,29 @@ class CausalNetwork(object):
             v.reset()
 
     def generate_joint(self, do=[]):
-        """Make a probability table"""
-        tree = self.generate_tree()
+        """Make the joint distribution"""
+        tree = self.generate_tree(do)
         return FullJoint(tree)
 
-    def generate_tree(self):
+    def generate_tree(self, do=[]):
         """Generate the ProbabilityTree"""
+
+        # Use the assigned distributions
+        for var in chain(self.inputs, do):
+            if var.assigned is None:
+                raise ValueError("{} has no distribution assigned.".format(var.name))
+            var.use_assigned = True
+
         tree = ProbabilityTree(self)
 
         # Evaluate all the nodes and recursively construct the
         # ProbabilityTree.
         self.evaluate_branch(tree.root, self.ordered_nodes)
+
+        # Reset this now
+        for var in chain(self.inputs, do):
+            var.use_assigned = False
+
         return tree
 
     def evaluate_branch(self, root, remaining_nodes):
@@ -290,10 +320,11 @@ class ProbabilityTree(object):
     def __init__(self, network):
         self.network = network
 
-        # Record the interventions and distributions...
+        # Record the assigned distributions (interventions and inputs)
         self.settings = {}
         for v in network.ordered_variables:
-            self.settings[v] = (v.distribution.copy(), v.intervene)
+            if v.use_assigned:
+                self.settings[v] = v.current_distribution.copy()
 
         self.root = ProbabilityBranch(None, 1.0)
 
@@ -374,7 +405,7 @@ class ProbabilityBranch(object):
         # Inputs are assumed to be independent (conditional on this branch),
         # so we can generate a cartesian product of the probabilities, then
         # use this to calculate the joint probabilities.
-        cart = cartesian([v.distribution for v in variables])
+        cart = cartesian([v.current_distribution for v in variables])
 
         # Each row contains the probabilities for that combination. We just
         # multiply them...
@@ -402,7 +433,7 @@ class FullJoint(object):
     generate all the required probabilities from it. We can also go and re-use
     the graph and this won't change.
     """
-    PROBABILITY_LABEL = 'Pr'
+    P_LABEL = 'Pr'
 
     def __init__(self, tree):
         self.tree = tree
@@ -412,8 +443,8 @@ class FullJoint(object):
 
         # Add a probability column and check they haven't named a variable the
         # same.
-        assert self.PROBABILITY_LABEL not in data
-        data[self.PROBABILITY_LABEL] = []
+        assert self.P_LABEL not in data
+        data[self.P_LABEL] = []
 
         # Now go through all the leaf branches, as these will have all values
         # calculated for them. Add each leaf branch probabilities as a row in
@@ -433,7 +464,7 @@ class FullJoint(object):
         # These have been topologically ordered, so it's a nice way to present
         # them.
         ordering = [v.name for v in tree.network.ordered_variables]
-        ordering.append(self.PROBABILITY_LABEL)
+        ordering.append(self.P_LABEL)
 
         # Create the Dataframe that carries all of the information from the
         # leaves
@@ -453,7 +484,7 @@ class FullJoint(object):
         # flexible.
         return pd.pivot_table(
             self.probabilities,
-            values=[self.PROBABILITY_LABEL],
+            values=[self.P_LABEL],
             index=[v.name for v in variables],
             aggfunc=np.sum
         )
@@ -465,12 +496,12 @@ class FullJoint(object):
         """Calculate the mutual (or conditional mutual) information.
 
         The simplest way to do this is to calculate the entropy of various
-        joint distributions. See here:
+        joint distributions and bung(C) them together. See here:
 
         https://en.wikipedia.org/wiki/Mutual_information
         https://en.wikipedia.org/wiki/Conditional_mutual_information
         """
-        # Use this to make it more readable
+        # Define a local variable to make it lovely and readable
         h = self.entropy
         if v3 is None:
             return h(v1) + h(v2) - h(v1, v2)
@@ -491,21 +522,3 @@ class FullJoint(object):
 
     def _repr_html_(self):
         return self.probabilities._repr_html_()
-
-
-if __name__ == '__main__':
-
-    def f_and_or(i1, i2, o1, o2):
-        if i1 and i2:
-            o1[1] = 1.0
-        else:
-            o1[0] = 1.0
-        if i1 or i2:
-            o2[1] = 1.0
-        else:
-            o2[0] = 1.0
-
-    c, s, a, k = make_variables('C S A K', 2)
-    p3 = Equation('p3', [c, s], [a, k], f_and_or)
-    print p3.per_state_results
-    print p3.show_mapping()
