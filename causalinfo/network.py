@@ -496,7 +496,7 @@ class FullJoint(object):
         """Calculate the mutual (or conditional mutual) information.
 
         The simplest way to do this is to calculate the entropy of various
-        joint distributions and bung(C) them together. See here:
+        joint distributions and bung them together. See here:
 
         https://en.wikipedia.org/wiki/Mutual_information
         https://en.wikipedia.org/wiki/Conditional_mutual_information

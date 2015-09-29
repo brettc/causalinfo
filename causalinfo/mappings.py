@@ -28,6 +28,13 @@ def f_and(i1, i2, o):
         o[0] = 1.0
 
 
+def f_or(i1, i2, o):
+    if i1 or i2:
+        o[1] = 1.0
+    else:
+        o[0] = 1.0
+
+
 def f_branch_same(i, o1, o2):
     o1[i] = 1.0
     o2[i] = 1.0
