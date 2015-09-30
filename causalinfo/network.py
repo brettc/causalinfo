@@ -54,6 +54,12 @@ class Variable(object):
     def assign_uniform(self):
         self.assign(np.ones(self.n_states) / float(self.n_states))
 
+    def assign_state(self, state):
+        assert state in self.states
+        dist = np.zeros(self.n_states)
+        dist[state] = 1.0
+        self.assign(dist)
+
     def assign_from_joint(self, full_joint):
         self.assign(full_joint.joint(self).values.ravel())
 
