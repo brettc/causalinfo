@@ -70,14 +70,15 @@ class Variable(object):
         return np_distn
 
     def assign(self, distn):
-        # Make it readonly. Then we can safely reference it from outside.
         self.assigned = self._check_distribution(distn)
 
     def clear(self):
         self.assigned = None
 
     def calculate(self, distn):
-        # Here, we assign the distribution
+        # This is the distribution calculated by the causal network. It is
+        # also the distribution used for further calculations unless this
+        # variable is being intervened with.
         self.calculated = self._check_distribution(distn)
 
     def __repr__(self):
@@ -427,11 +428,11 @@ class ProbabilityBranch(object):
 
 
 class FullJoint(object):
-    """All non-zero combinations of variables in a causal graph
+    """The joint distribution of all variables in a causal graph
 
-    This is the main result from calculating the causal graph. We can
-    generate all the required probabilities from it. We can also go and re-use
-    the graph and this won't change.
+    This is the main result from calculating the causal graph. We can generate
+    all the required probabilities from it. We can also go and re-use the
+    graph and this won't change.
     """
     P_LABEL = 'Pr'
 
@@ -471,7 +472,7 @@ class FullJoint(object):
         self.probabilities = pd.DataFrame(data=data, columns=ordering)
 
     def joint(self, *variables):
-        """Generate the joint distribution over N variables
+        """Generate the (sub)joint distribution over N variables
 
         Note: This uses pandas' MultiIndex to generate the joint distribution
         any number of variables together from the existing `probabilities`.
@@ -503,6 +504,8 @@ class FullJoint(object):
         """
         # Define a local variable to make it lovely and readable
         h = self.entropy
+
+        # Simple version
         if v3 is None:
             return h(v1) + h(v2) - h(v1, v2)
 
