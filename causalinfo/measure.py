@@ -1,5 +1,6 @@
 from network import CausalNetwork, Equation, make_variables
 import mappings
+import pandas as pd
 
 
 class Measure(object):
@@ -35,6 +36,10 @@ class Measure(object):
         """
         # 1. First, we simply observe the 'imposed' variable S as it occurs.
         j_observe = self.network.generate_joint()
+        print j_observe.joint(s_var)
+        # x = j_observe.probabilities.set_index([a_var.name, b_var.name, s_var.name])
+        # x.columns = ['P1']
+        # print x
 
         # print 'S'
         # print j_observe.joint(s_var)
@@ -42,13 +47,29 @@ class Measure(object):
         # 2. We then use the observed distribution of s to intervene...
         s_var.assign_from_joint(j_observe)
         j_do_s = self.network.generate_joint(do=[s_var])
+        print j_do_s.joint(s_var, a_var)
+        # print 'j do s'
+        # y = j_do_s.probabilities.set_index([a_var.name, b_var.name, s_var.name])
+        # y.columns = ['P2']
 
         # print 'A'
         # print j_observe.joint(s_var, a_var)
         # 3. Then we use this distribution of A|do(S), along with do(s) to
         #    intervene again.
+        # OK THIS IS THE BIT THAT IS FUCKED.
+        # We need to assign using the probabilities of DOING (s and a), thus
+        # need to supply a joint probability over the two of them! So need to
+        # actually put the joint into the doing. Argh.
         a_var.assign_from_joint(j_do_s)
         j_do_a_s = self.network.generate_joint(do=[s_var, a_var])
+        print j_do_a_s.joint(s_var, a_var, b_var)
+
+        # j_do_a_s.tree.dump()
+        # z = j_do_a_s.probabilities.set_index([a_var.name, b_var.name, s_var.name])
+        # print z
+
+        # joined = pd.concat([x, y, z], axis=1, join='inner')
+        # print joined
 
         # Not sure how to combine them yet. Is this right...?
         # print 'B'
@@ -108,15 +129,17 @@ def testing():
     print network.generate_joint().mutual_info(x, z, y)
     print m.causal_flow(x, z, y)
 
-    # print 'signaling'
-    # c, s, a = make_variables('C S A', 2)
-    # c.assign_uniform()
-    # eq1 = Equation('Send', [c], [s], mappings.f_same)
-    # eq2 = Equation('Recv', [s], [a], mappings.f_same)
-    # network = CausalNetwork([eq1, eq2])
-    # m = Measure(network)
-    # print m.causal_flow(s, a, c)
+def test_signal():
+    print 'signaling'
+    c, s, a = make_variables('C S A', 2)
+    c.assign_uniform()
+    eq1 = Equation('Send', [c], [s], mappings.f_same)
+    eq2 = Equation('Recv', [s], [a], mappings.f_same)
+    network = CausalNetwork([eq1, eq2])
+    m = Measure(network)
+    print m.causal_flow(s, a, c)
     # print m.causal_flow(c, a, s)
 
 if __name__ == "__main__":
-    signal_complex()
+    test_signal()
+    # signal_complex()
