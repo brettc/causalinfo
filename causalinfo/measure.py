@@ -1,20 +1,20 @@
-from network import CausalNetwork, Equation, make_variables
+from variables import TreeDistribution, UniformDist, make_variables
+from network import CausalNetwork, Equation
 import mappings
-import pandas as pd
 
 
 class Measure(object):
     def __init__(self, network):
         self.network = network
 
-    def causal_flow(self, a_var, b_var, s_var):
+    def causal_flow(self, a_var, b_var, s_var, input_dist):
         """Measure the flow of information from a -> b | do(s)
-        
+
         We rely on the fact that the calculation of flow can be broken down
         into 2 steps. First we generate a joint distribution *under
         interventions*, then we calculate simple conditional mutual
-        information over this distribution. 
-        
+        information over this distribution.
+
         The ability to do this is clearly described in Ay and Polani's
         original paper (see equation 9), where they say: "It should be noted
         that the information flow measure can be reformulated in terms of
@@ -23,7 +23,7 @@ class Measure(object):
 
         In other words, if we set the modified joint distribution to:
 
-        p_flow(x_S, x_A, x_B) := 
+        p_flow(x_S, x_A, x_B) :=
             p(x_S) p(x_A | do(x_S)) p(x_B | do(x_S), do(x_A))
 
         then:
@@ -35,8 +35,11 @@ class Measure(object):
         intervention experiments.
         """
         # 1. First, we simply observe the 'imposed' variable S as it occurs.
-        j_observe = self.network.generate_joint()
-        print j_observe.joint(s_var)
+        j_observe_tree = self.network.generate_tree(input_dist)
+        # j_observe_tree.dump()
+        j_observe = TreeDistribution(j_observe_tree)
+        do_s_var = j_observe.joint(s_var)
+        # print do_s_var.probabilities
         # x = j_observe.probabilities.set_index([a_var.name, b_var.name, s_var.name])
         # x.columns = ['P1']
         # print x
@@ -45,34 +48,25 @@ class Measure(object):
         # print j_observe.joint(s_var)
 
         # 2. We then use the observed distribution of s to intervene...
-        s_var.assign_from_joint(j_observe)
-        j_do_s = self.network.generate_joint(do=[s_var])
-        print j_do_s.joint(s_var, a_var)
+        j_do_s_tree = self.network.generate_tree(input_dist, do_dist=do_s_var)
+        # j_do_s_tree.dump()
+        j_do_s = TreeDistribution(j_do_s_tree)
+        sa_dist = j_do_s.joint(s_var, a_var)
         # print 'j do s'
+        # print sa_dist.probabilities
         # y = j_do_s.probabilities.set_index([a_var.name, b_var.name, s_var.name])
         # y.columns = ['P2']
 
-        # print 'A'
-        # print j_observe.joint(s_var, a_var)
         # 3. Then we use this distribution of A|do(S), along with do(s) to
         #    intervene again.
-        # OK THIS IS THE BIT THAT IS FUCKED.
         # We need to assign using the probabilities of DOING (s and a), thus
         # need to supply a joint probability over the two of them! So need to
         # actually put the joint into the doing. Argh.
-        a_var.assign_from_joint(j_do_s)
-        j_do_a_s = self.network.generate_joint(do=[s_var, a_var])
-        print j_do_a_s.joint(s_var, a_var, b_var)
+        j_do_a_s_tree = self.network.generate_tree(input_dist, do_dist=sa_dist)
+        j_do_a_s = TreeDistribution(j_do_a_s_tree)
+        # print j_do_a_s.probabilities
+        # print j_do_a_s.joint(a_var, b_var, s_var).probabilities
 
-        # j_do_a_s.tree.dump()
-        # z = j_do_a_s.probabilities.set_index([a_var.name, b_var.name, s_var.name])
-        # print z
-
-        # joined = pd.concat([x, y, z], axis=1, join='inner')
-        # print joined
-
-        # Not sure how to combine them yet. Is this right...?
-        # print 'B'
         # print j_do_a_s.joint(s_var, a_var, b_var)
 
         # 4. Now we simply calculate the conditional mutual information over
@@ -82,21 +76,21 @@ class Measure(object):
 
 def signal_complex():
     c1, c2, s1, s2, s3, s4, a1 = make_variables('c1 c2 s1 s2 s3 s4 a1', 2)
-    # c1.assign_uniform()
-    c1.assign([1, 0])
-    c2.assign_uniform()
+    in_dist = UniformDist(c1, c2)
+
     eq1 = Equation('SAME', [c1], [s1], mappings.f_same)
     eq2 = Equation('SAMEB', [c2], [s2, s3], mappings.f_branch_same)
     eq3 = Equation('AND', [s1, s2], [s4], mappings.f_and)
     eq4 = Equation('OR', [s3, s4], [a1], mappings.f_or)
     net = CausalNetwork([eq1, eq2, eq3, eq4])
     m = Measure(net)
-    print m.causal_flow(s3, a1, c2)
-    print m.causal_flow(s4, a1, c1)
+    print m.causal_flow(s3, a1, c1, in_dist)
+    print m.causal_flow(s4, a1, c1, in_dist)
 
 def testing():
     w, x, y, z = make_variables("W X Y Z", 2)
-    w.assign_uniform()
+
+    wdist = UniformDist(w)
 
     # Ay & Polani, Example 3
     eq1 = Equation('BR', [w], [x, y], mappings.f_branch_same)
@@ -126,20 +120,21 @@ def testing():
     eq2 = Equation('RAND', [x, y], [z], f_random_sometimes)
     network = CausalNetwork([eq1, eq2])
     m = Measure(network)
-    print network.generate_joint().mutual_info(x, z, y)
-    print m.causal_flow(x, z, y)
+    # print network.generate_joint().mutual_info(x, z, y)
+    print m.causal_flow(x, z, y, input_dist=wdist)
 
 def test_signal():
     print 'signaling'
     c, s, a = make_variables('C S A', 2)
-    c.assign_uniform()
     eq1 = Equation('Send', [c], [s], mappings.f_same)
     eq2 = Equation('Recv', [s], [a], mappings.f_same)
     network = CausalNetwork([eq1, eq2])
     m = Measure(network)
-    print m.causal_flow(s, a, c)
-    # print m.causal_flow(c, a, s)
+    input_dist = UniformDist(c)
+    print m.causal_flow(s, a, c, input_dist)
+    # print m.causal_flow(c, a, s, input_dist)
 
 if __name__ == "__main__":
-    test_signal()
-    # signal_complex()
+    # test_signal()
+    # testing()
+    signal_complex()
