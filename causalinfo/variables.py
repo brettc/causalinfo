@@ -177,11 +177,24 @@ class JointDist(Distribution):
         assert self.probabilities.index.names == self.names
 
 
+class JointDistByState(JointDist):
+    def __init__(self, state_assignments):
+        assignments = dict([(v, v.with_state(s)) for v, s in state_assignments.items()])
+        super(JointDistByState, self).__init__(assignments)
+
+
 class UniformDist(JointDist):
     """A handy class for constructing joint distributions"""
     def __init__(self, *vs):
         assignments = dict([(v, v.uniform()) for v in vs])
         super(UniformDist, self).__init__(assignments)
+
+
+def all_discrete_joints(*variables):
+    for states in product(*[v.states for v in variables]):
+        assignments = dict([(v, v.with_state(s)) for v, s in zip(variables, states)])
+        j = JointDist(assignments)
+        yield j
 
 
 class ProbabilityTree(object):
@@ -352,8 +365,14 @@ def test_tree():
     td = TreeDistribution(t)
     print td.probabilities
     print td.joint(a, c).probabilities
+
+def test_make_joints():
+    a, b, c = make_variables('A B C', 2)
+    all_discrete_joints(a, b)
+    print
 #
 
 if __name__ == '__main__':
+    test_make_joints()
     # test1()
-    test_tree()
+    # test_tree()
