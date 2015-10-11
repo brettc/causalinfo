@@ -160,11 +160,6 @@ class CausalNetwork(object):
             if isinstance(n, Equation):
                 network.node[n]['shape'] = 'diamond'
 
-    # def generate_joint(self, do=[]):
-    #     """Make the joint distribution"""
-    #     tree = self.generate_tree(do)
-    #     return FullJoint(tree)
-
     def generate_tree(self, input_dist, do_dist=None):
         """Generate the ProbabilityTree"""
 
@@ -185,6 +180,10 @@ class CausalNetwork(object):
                 self.evaluate_branch(b, self.ordered_nodes)
 
         return tree
+
+    def generate_joint(self, input_dist, do_dist=None):
+        tree = self.generate_tree(input_dist, do_dist)
+        return TreeDistribution(tree)
 
     def evaluate_branch(self, branch, remaining_nodes):
         """Recursively evaluate all possibilities, building a probability tree"""
