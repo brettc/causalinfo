@@ -287,8 +287,16 @@ class ProbabilityBranch(object):
 
 
 class TreeDistribution(Distribution):
+    """Construct a joint distribution from a ProbabilityTree
+    
+    We use the leaf branches of a probability tree (which *should* add to 1.0)
+    to construct a joint distribution over all variables in the tree.
+    """
+
     def __init__(self, tree, ordering=[]):
         super(TreeDistribution, self).__init__(tree.variables)
+        # Let's keep this around
+        self.tree = tree
 
         # Add a probability column and check they haven't named a variable the
         # same.
@@ -311,12 +319,20 @@ class TreeDistribution(Distribution):
             ordering = [v.name for v in tree.variables]
         else:
             ordering = ordering[:]
-        ordering.append(self.P_LABEL)
 
         # Create the Dataframe that carries all of the information from the
         # leaves
-        self.probabilities = pd.DataFrame(data=data, columns=ordering)
-        self.probabilities.set_index(self.names, inplace=True)
+        pr = pd.DataFrame(data=data)
+
+        # We use the pivot table to squash together all the branches which
+        # have identical states (this happens because the "do" variables
+        # filter down the tree and override any local settings).
+        self.probabilities = pd.pivot_table(
+            pr,
+            values=[Distribution.P_LABEL],
+            index=ordering,
+            aggfunc=np.sum,
+        )
 
 
 def test1():
