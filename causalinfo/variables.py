@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 from util import cartesian
-from itertools import product
 
 
 class Variable(object):
@@ -16,13 +15,14 @@ class Variable(object):
         """
         assert isinstance(name, str)
         assert name.isalnum()
+
+        # TODO: CURRENTLY DISABLED -- do we need it?
         # Names must uniquely identify the variables (as they're used to
         # identify the columns in our tables).
-        assert name not in Variable.USED_NAMES
+        # assert name not in Variable.USED_NAMES
+        # Variable.USED_NAMES.add(name)
 
         self.name = name
-        Variable.USED_NAMES.add(name)
-
         self.n_states = n_states
 
         # Generate the actual states; this makes it easy to work with.
@@ -50,6 +50,21 @@ class Variable(object):
         return '<{}>'.format(self.name)
 
 
+def expand_variables(vs):
+    """Make sure we have a list of Variables"""
+    try:
+        # This won't work if it ain't iterable
+        vsi = iter(vs)
+        list_of = []
+        for v in vsi:
+            list_of.extend(expand_variables(v))
+        return list_of
+    except:
+        # It must be a single Variable. Return it in a list
+        assert isinstance(vs, Variable)
+        return [vs]
+
+
 def make_variables(strings, n_states):
     """Just a shortcut for making lots of variables"""
     varnames = strings.split()
@@ -69,7 +84,7 @@ class Distribution(object):
         assert len(set(variables)) == len(variables)
 
         self.variables = list(variables)
-        self.names = [v.name for v in variables]
+        self.names = [v.name for v in self.variables]
         self.probabilities = pr
 
     def joint(self, *variables):
@@ -78,9 +93,7 @@ class Distribution(object):
         Note: This uses pandas' MultiIndex to generate the joint distribution
         any number of variables together from the existing probabilities.
         """
-        for v in variables:
-            assert isinstance(v, Variable)
-            assert v in self.variables
+        variables = expand_variables(variables)
 
         # This is the function that does all the work. It is amazingly
         # flexible.
@@ -170,14 +183,17 @@ class JointDist(Distribution):
         for v, a in assignments.items():
             np_assgn[v] = v.make_valid_distribution(a)
 
+        # NOTE: Ensure you keep the order consistent (use self.variables &
+        # self.names to construct everything).
+
         # Create an array with all possible combinations of states of inputs
         # from these variables.
-        all_states = cartesian(v.states for v in np_assgn.keys())
+        all_states = cartesian(v.states for v in self.variables)
 
         # Inputs are assumed to be independent (conditional on this branch),
         # so we can generate a cartesian product of the probabilities, then
         # use this to calculate the joint probabilities.
-        cart = cartesian([a for a in np_assgn.values()])
+        cart = cartesian([np_assgn[v] for v in self.variables])
 
         # Each row contains the probabilities for that combination. We just
         # multiply them...
@@ -190,10 +206,12 @@ class JointDist(Distribution):
         self.probabilities = pd.concat([s, p], axis=1)
         self.probabilities.set_index(self.names, inplace=True)
 
+        # Check we kept the order consistent
         assert self.probabilities.index.names == self.names
 
 
 class JointDistByState(JointDist):
+    """Construct joint distribution where one state has p=1.0"""
     def __init__(self, state_assignments):
         assignments = dict([(v, v.with_state(s)) for v, s in state_assignments.items()])
         super(JointDistByState, self).__init__(assignments)
@@ -204,13 +222,6 @@ class UniformDist(JointDist):
     def __init__(self, *vs):
         assignments = dict([(v, v.uniform()) for v in vs])
         super(UniformDist, self).__init__(assignments)
-
-
-def all_discrete_joints(*variables):
-    for states in product(*[v.states for v in variables]):
-        assignments = dict([(v, v.with_state(s)) for v, s in zip(variables, states)])
-        j = JointDist(assignments)
-        yield j
 
 
 class ProbabilityTree(object):
@@ -230,7 +241,7 @@ class ProbabilityTree(object):
             for b in self._branch_iter(b):
                 yield b
 
-    def dump(self):
+    def _dump(self):
         # TODO: Sort the assignments into something nicer with labels,
         # ordered.
         for b in self.all_branches():
@@ -279,7 +290,8 @@ class ProbabilityBranch(object):
     def probability(self):
         """The unconditional probability of this branch
 
-        This simply the product of this and all parent branches"""
+        The product of the prob of this and all parent branches
+        """
         prob = self.c_prob
         for p in self.ancestors():
             prob *= p.c_prob
@@ -304,7 +316,7 @@ class ProbabilityBranch(object):
 
 class TreeDistribution(Distribution):
     """Construct a joint distribution from a ProbabilityTree
-    
+
     We use the leaf branches of a probability tree (which *should* add to 1.0)
     to construct a joint distribution over all variables in the tree.
     """
@@ -349,62 +361,3 @@ class TreeDistribution(Distribution):
             index=ordering,
             aggfunc=np.sum,
         )
-
-
-def test1():
-    import mappings
-    a, b, c = make_variables('A B C', 2)
-    print a
-    print b
-    d = JointDist({a: [.3, .7], b: b.uniform()})
-    print d.probabilities
-    print d.joint(b, a).probabilities
-    #
-    q = JointDist({a: a.uniform()})
-    print q.probabilities
-
-    d = JointDist({a: a.with_state(0), b: b.uniform()})
-    print d.probabilities
-
-    #
-    # Can trim to zero
-    print d.probabilities[d.probabilities['Pr'] != 0.0]
-
-    # d = JointDist({a: a.uniform()})
-    # print d.probabilities
-    # eq = Equation('xor', [a, b], [c], mappings.f_xor)
-    # print eq.mapping_table().index.names
-    #
-    # print JointDist(eq.calculate({a: 1, b: 1})).probabilities
-    #
-    # print UniformDist(a, b).probabilities
-    #
-    # print d.probabilities.index.names
-    # for r in d.probabilities.iterrows():
-    #     print r[0], r[1]['Pr']
-
-
-def test_tree():
-    a, b, c = make_variables('A B C', 2)
-    d = JointDist({a: [.8, .2], b: b.uniform()})
-    # d = JointDist({a: [0, 1], b: b.uniform()})
-    t = ProbabilityTree()
-    t.root.add_branches(d)
-    for bch in t.root.branches:
-        bch.add_branches(JointDist({c: [.6, .4]}))
-    t.dump()
-
-    td = TreeDistribution(t)
-    print td.probabilities
-    print td.joint(a, c).probabilities
-
-def test_make_joints():
-    a, b, c = make_variables('A B C', 2)
-    all_discrete_joints(a, b)
-    print
-#
-
-if __name__ == '__main__':
-    test_make_joints()
-    # test1()
-    # test_tree()
