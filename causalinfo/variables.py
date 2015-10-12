@@ -6,9 +6,6 @@ from itertools import product
 
 class Variable(object):
     """A discrete variable, with a distribution over N states.
-
-    The variable can be assigned a distribution if is being used as input, or
-    as an intervention. Otherwise the distribution is calculated.
     """
 
     USED_NAMES = set()
@@ -17,29 +14,33 @@ class Variable(object):
         """Name the variable, and say how many states it has. Variables start
         off as unassigned.
         """
-        assert str(name) == name
+        assert isinstance(name, str)
         assert name.isalnum()
-        # Don't recreate variables
+        # Names must uniquely identify the variables (as they're used to
+        # identify the columns in our tables).
         assert name not in Variable.USED_NAMES
 
         self.name = name
         Variable.USED_NAMES.add(name)
 
-        # Generate the actual states; this makes it easy to work with.
         self.n_states = n_states
+
+        # Generate the actual states; this makes it easy to work with.
         self.states = range(n_states)
 
     def uniform(self):
+        """Return a uniform distribution for this variable."""
         return np.ones(self.n_states) / float(self.n_states)
 
     def with_state(self, state):
+        """Return a distribution with just this state set."""
         assert state in self.states
         dist = np.zeros(self.n_states)
         dist[state] = 1.0
         return dist
 
     def make_valid_distribution(self, distn):
-        """Various checks to make sure nothing silly is happening"""
+        """Convert distribution and check it."""
         np_distn = np.array(distn, dtype=float)
         assert np_distn.shape == (self.n_states,)
         assert np.isclose(np_distn.sum(), 1.0)
@@ -56,12 +57,12 @@ def make_variables(strings, n_states):
 
 
 class Distribution(object):
-    """A distribution over one or more variables
+    """Base class for a distribution over one or more variables
     """
     P_LABEL = 'Pr'
 
     def __init__(self, variables, pr=None):
-        # Make a copy
+        # Everything should be a variable
         for v in variables:
             assert isinstance(v, Variable)
         # No duplicates!
@@ -72,10 +73,10 @@ class Distribution(object):
         self.probabilities = pr
 
     def joint(self, *variables):
-        """Generate the (sub)joint distribution over N variables
+        """Generate the (sub)joint distribution over included variables
 
         Note: This uses pandas' MultiIndex to generate the joint distribution
-        any number of variables together from the existing `probabilities`.
+        any number of variables together from the existing probabilities.
         """
         for v in variables:
             assert isinstance(v, Variable)
@@ -121,6 +122,7 @@ class Distribution(object):
             yield assignments, pr
 
     def entropy(self, *variables):
+        """Calculate the entropy of one or more variables in this distribution."""
         return self._calc_entropy(self.joint(*variables).probabilities)
 
     def mutual_info(self, v1, v2, v3=None):
