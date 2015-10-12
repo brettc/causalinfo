@@ -160,14 +160,14 @@ class CausalNetwork(object):
             if isinstance(n, Equation):
                 network.node[n]['shape'] = 'diamond'
 
-    def generate_tree(self, input_dist, do_dist=None):
+    def generate_tree(self, root_dist, do_dist=None):
         """Generate the ProbabilityTree"""
 
         tree = ProbabilityTree()
 
         # This could be much nicer if we had a way to merge distributions
         if do_dist is None:
-            tree.root.add_branches(input_dist)
+            tree.root.add_branches(root_dist)
 
             # Evaluate all the nodes and recursively construct the
             # ProbabilityTree.
@@ -176,13 +176,13 @@ class CausalNetwork(object):
         else:
             tree.root.add_branches(do_dist)
             for b in tree.root.branches:
-                b.add_branches(input_dist)
+                b.add_branches(root_dist)
                 self.evaluate_branch(b, self.ordered_nodes)
 
         return tree
 
-    def generate_joint(self, input_dist, do_dist=None):
-        tree = self.generate_tree(input_dist, do_dist)
+    def generate_joint(self, root_dist, do_dist=None):
+        tree = self.generate_tree(root_dist, do_dist)
         return TreeDistribution(tree)
 
     def evaluate_branch(self, branch, remaining_nodes):
@@ -209,6 +209,8 @@ class CausalNetwork(object):
         for b in branch.branches:
             # Let the player assign output
             outputs = current_eq.calculate(b.assignments)
+
+            # Construct a distribution of these outputs
             distn = JointDist(outputs)
 
             # Add the branches, and then evaluate using the next set of
@@ -227,12 +229,12 @@ def test_signal():
     network = CausalNetwork([eq1, eq2])
     dc = UniformDist(c)
     ds = UniformDist(s)
-    t = network.generate_tree(input_dist=dc)
+    t = network.generate_tree(root_dist=dc)
     t.dump()
     print TreeDistribution(t).probabilities
     new_dist = TreeDistribution(t).joint(c, s)
 
-    t = network.generate_tree(input_dist=dc, do_dist=new_dist)
+    t = network.generate_tree(root_dist=dc, do_dist=new_dist)
     t.dump()
     print TreeDistribution(t).joint(s).probabilities
     # m = Measure(network)
