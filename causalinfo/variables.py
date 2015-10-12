@@ -95,6 +95,20 @@ class Distribution(object):
         # Return another (smaller?) distribution.
         return Distribution(variables, pr)
 
+    def prob_of_state(self, assignments):
+        assert set(assignments.keys()) == set(self.variables)
+        # Construct a tuple from the assignments
+        by_name = dict([(v.name, val) for v, val in assignments.items()])
+        state = tuple([by_name[nm] for nm in self.probabilities.index.names])
+        return self.probabilities.loc[state].values[0]
+
+    def iter_conditional(self, a, b):
+        # Build a lookup for b
+        jb = self.joint(b)
+        jab = self.joint(a, b)
+        for ass, p in jab.iter_assignments():
+            yield ass, p / jb.prob_of_state({b: ass[b]})
+
     def iter_assignments(self):
         # Indexes are returned as single values when there is only one..
         is_single = len(self.variables) == 1
