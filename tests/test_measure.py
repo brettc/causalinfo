@@ -1,7 +1,6 @@
-from pandas.util.testing import assert_frame_equal
+from numpy.testing import assert_allclose
 
-from causalinfo.variables import (Variable, make_variables, UniformDist,
-                                  expand_variables, JointDistByState) 
+from causalinfo.variables import (make_variables, UniformDist, JointDist)
 from causalinfo.network import Equation, CausalNetwork
 from causalinfo.measure import Measure
 from causalinfo import mappings
@@ -21,7 +20,7 @@ def signal_complex():
     print m.causal_flow(s4, a1, c1, in_dist)
 
 
-def testing():
+def xxxtesting():
     w, x, y, z = make_variables("W X Y Z", 2)
 
     wdist = UniformDist(w)
@@ -57,7 +56,8 @@ def testing():
     # print network.generate_joint().mutual_info(x, z, y)
     print m.causal_flow(x, z, y, root_dist=wdist)
 
-def test_signal():
+
+def xxtest_signal():
     print 'signaling'
     c, s, a = make_variables('C S A', 2)
     eq1 = Equation('Send', [c], [s], mappings.f_same)
@@ -68,9 +68,9 @@ def test_signal():
     print m.mutual_info(s, a)
     print m.causal_flow(s, a)
     print m.average_sad(s, a)
-    
 
-def test_half_signal():
+
+def xxtest_half_signal():
 
     def merge(i1, i2, o1):
         if i2:
@@ -90,7 +90,8 @@ def test_half_signal():
     m = Measure(network)
     print m.causal_flow2(s1, a, root_dist)
     # print m.causal_flow2(s2, a, root_dist)
-    #
+
+
 def test_signal3():
 
     def merge(i1, i2, o1):
@@ -100,24 +101,44 @@ def test_signal3():
         else:
             o1[i1/2] = 1.0
 
-    print 'signaling 2'
     c1, s1, s3, a = make_variables('C1 S1 S3 A', 4)
     c2, s2 = make_variables('C2 S2', 2)
     eq1 = Equation('Send1', [c1], [s1], mappings.f_same)
     eq2 = Equation('Send2', [c2], [s2], mappings.f_same)
     eq3 = Equation('Rec1', [s1, s2], [a], merge)
     network = CausalNetwork([eq1, eq2, eq3])
-    root_dist = JointDist({c1: [.25] * 4, c2: [.2, .8]})
-    m = Measure(network)
-    # print m.causal_flow2(s1, a, root_dist)
-    # print m.causal_flow2(s2, a, root_dist)
-    print m.causal_flow(s1, a, s2, root_dist)
-    print m.average_sad(s1, a, root_dist)
+    root_dist = JointDist({c1: [.25] * 4, c2: [.5, .5]})
+    m = Measure(network, root_dist)
 
-    print m.causal_flow(s2, a, s1, root_dist)
-    print m.average_sad(s2, a, root_dist)
+    # We check on the equivalence of these.
+    assert_allclose(m.causal_flow(s1, a, s2), m.average_sad(s1, a))
+    assert_allclose(m.causal_flow(s2, a, s1), m.average_sad(s2, a))
 
-def test_signal4():
+    print m.average_sad(s1, a), m.mutual_info(s1, a)
+
+
+def test_random_spec():
+
+    def add_noise(i1, i2, o1):
+        if i2:
+            # Random Coin toss
+            o1[:] = .5
+        else:
+            # Otherwise specific
+            o1[i1] = 1.0
+
+    c1, c2, s1, a = make_variables('C1 C2 S1 A', 2)
+    eq1 = Equation('Send1', [c1, c2], [s1], add_noise)
+    eq2 = Equation('Send2', [s1], [a], mappings.f_same)
+    network = CausalNetwork([eq1, eq2])
+    root_dist = JointDist({c1: [.2, .8], c2: [.5, .5]})
+    m = Measure(network, root_dist)
+
+    # Spec is the same
+    assert m.mutual_info(s1, a) == m.average_sad(s1, a)
+
+
+def xxxtest_signal4():
 
     def merge1(i1, i2, o1):
         if i2:
@@ -168,7 +189,8 @@ def test_signal4():
     # print j_observe.joint(s1).probabilities
     # print j_observe.joint(c1, c2, a).probabilities
 
-def test_diamond():
+
+def xxtest_diamond():
     def merge(i1, i2, o1):
         if i2:
             # Perfect spec
