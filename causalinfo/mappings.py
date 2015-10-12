@@ -21,6 +21,13 @@ def f_xnor(i1, i2, o):
         o[0] = 1.0
 
 
+def f_xor(i1, i2, o):
+    if (i1 or i2) and not (i1 and i2):
+        o[1] = 1.0
+    else:
+        o[0] = 1.0
+
+
 def f_and(i1, i2, o):
     if i1 and i2:
         o[1] = 1.0
