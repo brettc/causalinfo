@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+
 from util import cartesian
 
 
@@ -59,8 +60,8 @@ def expand_variables(vs):
         for v in vsi:
             list_of.extend(expand_variables(v))
         return list_of
-    except:
-        # It must be a single Variable. Return it in a list
+    except TypeError:
+        # Okay, it must be a single Variable. Return it in a list.
         assert isinstance(vs, Variable)
         return [vs]
 
@@ -157,7 +158,8 @@ class Distribution(object):
         # Conditional version
         return h(v1, v3) + h(v2, v3) - h(v1, v2, v3) - h(v3)
 
-    def _calc_entropy(self, df):
+    @staticmethod
+    def _calc_entropy(df):
         """Calculate entropy of all entries in a Dataframe (ignoring shape)
 
         Assumes there are no zero entries (the way we generate probabilities
@@ -169,6 +171,7 @@ class Distribution(object):
         return -(q * np.log2(q)).sum()
 
     def _repr_html_(self):
+        # noinspection PyProtectedMember
         return self.probabilities._repr_html_()
 
 
@@ -238,8 +241,8 @@ class ProbabilityTree(object):
     def _branch_iter(self, root):
         yield root
         for b in root.branches:
-            for b in self._branch_iter(b):
-                yield b
+            for sub_b in self._branch_iter(b):
+                yield sub_b
 
     def _dump(self):
         # TODO: Sort the assignments into something nicer with labels,
@@ -250,7 +253,10 @@ class ProbabilityTree(object):
 
 class ProbabilityBranch(object):
     """The variable assignments and their Conditional probability"""
-    def __init__(self, tree, parent, prob, assignments={}):
+
+    def __init__(self, tree, parent, prob, assignments=None):
+        if not assignments:
+            assignments = {}
         self.tree = tree
         tree.variables |= set(assignments.keys())
         self.parent = parent
@@ -282,7 +288,7 @@ class ProbabilityBranch(object):
     @property
     def depth(self):
         depth = 0
-        for p in self.ancestors():
+        for _ in self.ancestors():
             depth += 1
         return depth
 
@@ -321,7 +327,9 @@ class TreeDistribution(Distribution):
     to construct a joint distribution over all variables in the tree.
     """
 
-    def __init__(self, tree, ordering=[]):
+    def __init__(self, tree, ordering=None):
+        if not ordering:
+            ordering = []
         super(TreeDistribution, self).__init__(tree.variables)
         # Let's keep this around
         self.tree = tree

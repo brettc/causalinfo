@@ -1,7 +1,9 @@
 from itertools import product
+
 import networkx as nx
 import numpy as np
 import pandas as pd
+
 from variables import Variable, ProbabilityTree, JointDist, TreeDistribution
 
 
@@ -97,6 +99,7 @@ class Equation(object):
                               columns=['Output', 'State'])
 
     def _repr_html_(self):
+        # noinspection PyProtectedMember
         return self.mapping_table()._repr_html_()
 
 
@@ -175,13 +178,13 @@ class CausalNetwork(object):
 
             # Evaluate all the nodes and recursively construct the
             # ProbabilityTree.
-            self.evaluate_branch(tree.root, self.ordered_nodes)
+            self._evaluate_branch(tree.root, self.ordered_nodes)
 
         else:
             tree.root.add_branches(do_dist)
             for b in tree.root.branches:
                 b.add_branches(root_dist)
-                self.evaluate_branch(b, self.ordered_nodes)
+                self._evaluate_branch(b, self.ordered_nodes)
 
         return tree
 
