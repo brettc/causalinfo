@@ -55,7 +55,10 @@ class Equation(object):
         states = tuple([assignments[v] for v in self.inputs])
 
         # Look them up
-        results = self.lookup[states]
+        try:
+            results = self.lookup[states]
+        except KeyError:
+            raise RuntimeError("Error in {} with key {}".format(self, states))
 
         # Now, construct a mapping over th output variables and return that.
         return dict(zip(self.outputs, results))
@@ -68,7 +71,7 @@ class Equation(object):
 
         We do this a long-winded way, but it allows pandas to do the nice
         formatting for us. We generate a row for every single possibility of
-        input and outputs states of this variable, the use the pivot_table to
+        input and outputs states of this variable, then use the pivot_table to
         construct a table for us with nice row/column headings.
         """
         # Create a set of dictionaries/lists for each column
@@ -98,6 +101,7 @@ class Equation(object):
 
 
 class CausalNetwork(object):
+    """A Causal graph built using a set of equations relating variables"""
 
     def __init__(self, equations):
         assert not [not_p for not_p in equations
@@ -182,10 +186,11 @@ class CausalNetwork(object):
         return tree
 
     def generate_joint(self, root_dist, do_dist=None):
+        """Get the joint distribution, given root & do variables"""
         tree = self.generate_tree(root_dist, do_dist)
         return TreeDistribution(tree)
 
-    def evaluate_branch(self, branch, remaining_nodes):
+    def _evaluate_branch(self, branch, remaining_nodes):
         """Recursively evaluate all possibilities, building a probability tree"""
         current_eq = None
         next_nodes = []
@@ -216,31 +221,4 @@ class CausalNetwork(object):
             # Add the branches, and then evaluate using the next set of
             # remaining nodes.
             b.add_branches(distn)
-            self.evaluate_branch(b, next_nodes)
-
-
-def test_signal():
-    print 'signaling'
-    from variables import UniformDist, make_variables
-    import mappings
-    c, s, a = make_variables('C S A', 2)
-    eq1 = Equation('Send', [c], [s], mappings.f_same)
-    eq2 = Equation('Recv', [s], [a], mappings.f_same)
-    network = CausalNetwork([eq1, eq2])
-    dc = UniformDist(c)
-    ds = UniformDist(s)
-    t = network.generate_tree(root_dist=dc)
-    t.dump()
-    print TreeDistribution(t).probabilities
-    new_dist = TreeDistribution(t).joint(c, s)
-
-    t = network.generate_tree(root_dist=dc, do_dist=new_dist)
-    t.dump()
-    print TreeDistribution(t).joint(s).probabilities
-    # m = Measure(network)
-    # print m.causal_flow(s, a, c)
-    # print m.causal_flow(c, a, s)
-
-if __name__ == '__main__':
-    test_signal()
-
+            self._evaluate_branch(b, next_nodes)
