@@ -1,8 +1,14 @@
-from variables import JointDistByState
+import pandas as pd
+import numpy as np
+from network import CausalNetwork
+from variables import JointDistByState, Distribution
 
 
-class Measure(object):
+class MeasureCause(object):
     def __init__(self, network, root_dist):
+        assert isinstance(network, CausalNetwork)
+        assert isinstance(root_dist, Distribution)
+
         self.network = network
         self.root_dist = root_dist
 
@@ -81,7 +87,7 @@ class Measure(object):
         going through X_A.
         """
         tot = 0.0
-        # First, get the global distribution of the variable a ...
+        # First, get the unconditional distribution of the variable a_var
         a_dist = self.network.generate_joint(self.root_dist).joint(a_var)
 
         # Now average this across all of the root assignments 'doing a' with
@@ -93,3 +99,68 @@ class Measure(object):
         return tot
 
 
+class MeasureSuccess(MeasureCause):
+    def __init__(self, network, root_dist, payoff_mapping):
+        super(MeasureSuccess, self).__init__(network, root_dist)
+
+        # This is what happens to this network (without interventions)
+        observed = network.generate_joint(root_dist)
+
+        # Let's look at just the inputs and outputs
+        inputs_and_outputs = list(self.network.inputs) + list(self.network.outputs)
+        results = observed.joint(inputs_and_outputs).probabilities.reset_index()
+        results['Fit'] = results.apply(payoff_mapping, axis=1)
+
+        # We now have fitness assigned for each positive probability
+        # environment. Let's construct something that allows us look up the
+        # fitness of any environment
+        summed = pd.pivot_table(
+            results,
+            values=['Fit'],
+            index=[v.name for v in self.network.inputs],
+            aggfunc=np.sum,
+        )
+        print summed
+       
+def payoffs(row):
+    if row['C'] == 0:
+        if row['A'] == 0:
+            return 5.0
+    elif row['C'] == 1:
+        if row['A'] == 1:
+            return 2.0
+    return 0.0
+
+
+def test1():
+    from variables import make_variables, JointDist
+    from network import Equation, CausalNetwork
+    import mappings
+    c, s, a = make_variables('C S A', 2)
+    eq1 = Equation('Send', [c], [s], mappings.f_rotate_right)
+    eq2 = Equation('Recv', [s], [a], mappings.f_rotate_right)
+    network = CausalNetwork([eq1, eq2])
+    root_dist = JointDist({c: [.7, .3]})
+    # for i, c in root_dist.probabilities.iterrows():
+    #     print i, c
+    #
+    ms = MeasureSuccess(network, root_dist, payoffs)
+
+    # tot = 0.0
+
+    # for ass, p in observed.iter_assignments():
+    #     dd = dict([(v.name, val) for v, val in ass.items()])
+    #     blarg(**dd)
+    #
+    # Now average this across all of the root assignments 'doing a' with
+    # the above distribution.
+    # for ass, p in root_dist.iter_assignments():
+    #     j = JointDistByState(ass)
+    #     d = network.generate_joint(j, do_dist=s_dist)
+    #     print d.probabilities
+    #     tot += p * d.mutual_info(s, a)
+    # print tot
+
+
+if __name__ == '__main__':
+    test1()
