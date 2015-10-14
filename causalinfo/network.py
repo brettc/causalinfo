@@ -4,7 +4,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
-from variables import Variable, ProbabilityTree, JointDist, TreeDistribution
+from probability import Variable, ProbabilityTree, JointDist, TreeDistribution
 
 
 class Equation(object):
@@ -68,7 +68,7 @@ class Equation(object):
     def __repr__(self):
         return "Equation<{}>".format(self.name)
 
-    def mapping_table(self):
+    def to_frame(self):
         """Output the mapping equation in a nice way
 
         We do this a long-winded way, but it allows pandas to do the nice
@@ -100,10 +100,10 @@ class Equation(object):
 
     def _repr_html_(self):
         # noinspection PyProtectedMember
-        return self.mapping_table()._repr_html_()
+        return self.to_frame()._repr_html_()
 
 
-class CausalNetwork(object):
+class CausalGraph(object):
     """A Causal graph built using a set of equations relating variables"""
 
     def __init__(self, equations):

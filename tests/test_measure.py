@@ -1,46 +1,66 @@
 from numpy.testing import assert_allclose
+from numpy import log2
 
-from causalinfo.variables import (make_variables, UniformDist, JointDist)
-from causalinfo.network import Equation, CausalNetwork
+from causalinfo.probability import (make_variables, UniformDist, JointDist)
+from causalinfo.network import Equation, CausalGraph
 from causalinfo.measure import MeasureCause, MeasureSuccess
 from causalinfo import mappings
 
 
-def signal_complex():
+def test_controlled_diamond():
+    """This examples can move us from a correlation case to a diamond
+    """
     c1, c2, s1, s2, s3, s4, a1 = make_variables('c1 c2 s1 s2 s3 s4 a1', 2)
-    in_dist = UniformDist(c1, c2)
 
     eq1 = Equation('SAME', [c1], [s1], mappings.f_same)
     eq2 = Equation('SAMEB', [c2], [s2, s3], mappings.f_branch_same)
     eq3 = Equation('AND', [s1, s2], [s4], mappings.f_and)
     eq4 = Equation('OR', [s3, s4], [a1], mappings.f_or)
-    net = CausalNetwork([eq1, eq2, eq3, eq4])
-    m = MeasureCause(net)
-    print m.causal_flow(s3, a1, c1, in_dist)
-    print m.causal_flow(s4, a1, c1, in_dist)
+    net = CausalGraph([eq1, eq2, eq3, eq4])
+
+    # Let's just use Uniform
+    m = MeasureCause(net, UniformDist(c1, c2))
+
+    # Mutual info is pretty useless, as it is the same across these...
+    assert m.mutual_info(s2, a1) == m.mutual_info(s3, a1)
+
+    # Look how much better average sad is!
+    assert m.average_sad(s2, a1) < m.average_sad(s3, a1)
 
 
-def xxxtesting():
+def test_ay_polani():
     w, x, y, z = make_variables("W X Y Z", 2)
-
     wdist = UniformDist(w)
 
     # Ay & Polani, Example 3
     eq1 = Equation('BR', [w], [x, y], mappings.f_branch_same)
     eq2 = Equation('XOR', [x, y], [z], mappings.f_xor)
-    network = CausalNetwork([eq1, eq2])
-    m = MeasureCause(network)
-    print m.causal_flow(x, y, w, wdist)
-    print m.causal_flow(w, z, y, wdist)
+
+    # Build the graph
+    eg3 = CausalGraph([eq1, eq2])
+    m_eg3 = MeasureCause(eg3, wdist)
+
+    # See the table on p29
+    assert m_eg3.mutual_info(x, y) == 1
+    assert m_eg3.mutual_info(x, y, w) == 0
+    assert m_eg3.mutual_info(w, z, y) == 0
+
+    assert m_eg3.causal_flow(x, y) == 0
+    assert m_eg3.causal_flow(x, y, w) == 0
+    assert m_eg3.causal_flow(w, z, y) == 1
 
     # Ay & Polani, Example 5.1
     def f_copy_first(i1, i2, o1):
         o1[i1] = 1.0
-    # eq2 = Equation('COPYX', [x, y], [z], f_copy_first)
-    network = CausalNetwork([eq1, eq2])
-    m = MeasureCause(network)
-    # print network.generate_joint().mutual_info(x, z, y)
-    print m.causal_flow(x, z, y, wdist)
+
+    eq2 = Equation('COPYX', [x, y], [z], f_copy_first)
+    eg51 = CausalGraph([eq1, eq2])
+    m_eg51 = MeasureCause(eg51, wdist)
+
+    # See paragraph at top of page 30
+    assert m_eg51.mutual_info(x, z, y) == 0
+    assert m_eg51.causal_flow(x, z, y) == 1
+    assert m_eg51.causal_flow(x, z) == 1
 
     # Ay & Polani, Example 5.2
     def f_random_sometimes(i1, i2, o1):
@@ -50,17 +70,19 @@ def xxxtesting():
             mappings.f_xor(i1, i2, o1)
 
     eq2 = Equation('RAND', [x, y], [z], f_random_sometimes)
-    network = CausalNetwork([eq1, eq2])
-    m = MeasureCause(network)
-    # print network.generate_joint().mutual_info(x, z, y)
-    print m.causal_flow(x, z, y, root_dist=wdist)
+    eg52 = CausalGraph([eq1, eq2])
+    m_eg52 = MeasureCause(eg52, wdist)
+
+    # See pg 30
+    expected = 3.0 / 4.0 * log2(4.0 / 3.0)
+    assert_allclose(m_eg52.causal_flow(x, z, y), expected)
 
 
 def test_signal_of_for():
     c, s, a, k = make_variables('C S A K', 2)
     eq1 = Equation('Send', [c], [s, k], mappings.f_branch_same)
     eq2 = Equation('Recv', [s], [a], mappings.f_same)
-    network = CausalNetwork([eq1, eq2])
+    network = CausalGraph([eq1, eq2])
     root_dist = JointDist({c: [.7, .3]})
     m = MeasureCause(network, root_dist)
 
@@ -84,12 +106,11 @@ def xxtest_half_signal():
     eq1 = Equation('Send1', [c1], [s1], mappings.f_same)
     eq2 = Equation('Send2', [c2], [s2], mappings.f_same)
     eq3 = Equation('Rec1', [s1, s2], [a], merge)
-    network = CausalNetwork([eq1, eq2, eq3])
+    network = CausalGraph([eq1, eq2, eq3])
     root_dist = UniformDist(c1, c2)
     root_dist = JointDist({c1: [.5, .5], c2: [0, 1]})
     print root_dist.probabilities
     m = MeasureCause(network)
-    print m.causal_flow2(s1, a, root_dist)
     # print m.causal_flow2(s2, a, root_dist)
 
 
@@ -107,7 +128,7 @@ def test_signal3():
     eq1 = Equation('Send1', [c1], [s1], mappings.f_same)
     eq2 = Equation('Send2', [c2], [s2], mappings.f_same)
     eq3 = Equation('Rec1', [s1, s2], [a], merge)
-    network = CausalNetwork([eq1, eq2, eq3])
+    network = CausalGraph([eq1, eq2, eq3])
     root_dist = JointDist({c1: [.25] * 4, c2: [.5, .5]})
     m = MeasureCause(network, root_dist)
     j_observe = network.generate_joint(root_dist)
@@ -135,7 +156,7 @@ def test_random_spec():
     c1, c2, s1, a = make_variables('C1 C2 S1 A', 2)
     eq1 = Equation('Send1', [c1, c2], [s1], add_noise)
     eq2 = Equation('Send2', [s1], [a], mappings.f_same)
-    network = CausalNetwork([eq1, eq2])
+    network = CausalGraph([eq1, eq2])
     root_dist = JointDist({c1: [.2, .8], c2: [.5, .5]})
     m = MeasureCause(network, root_dist)
 
@@ -173,7 +194,7 @@ def xxxtest_signal4():
     eq3 = Equation('Rec1', [s2, s1], [s4], merge1)
     eq4 = Equation('Rec2', [c3], [s3], mappings.f_same)
     eq5 = Equation('Rec3', [s3, s4], [a], merge2)
-    network = CausalNetwork([eq1, eq2, eq3, eq4, eq5])
+    network = CausalGraph([eq1, eq2, eq3, eq4, eq5])
     root_dist = JointDist({c1: [.25] * 4, c2: [.2, .8], c3: [.5, .5]})
     # for ass, p in root_dist.iter_assignments():
     #     print ass, p
@@ -208,7 +229,7 @@ def xxtest_diamond():
     eq2 = Equation('Relay1', [s1], [s3], mappings.f_same)
     eq3 = Equation('Relay2', [s2], [s4], mappings.f_same)
     eq4 = Equation('XOR', [s3, s4], [a], mappings.f_xor)
-    n = CausalNetwork([eq1, eq2, eq3, eq4])
+    n = CausalGraph([eq1, eq2, eq3, eq4])
     root_dist = JointDist({c: [.5, .5]})
     m = MeasureCause(n, root_dist)
     print m.mutual_info(s3, a)
@@ -223,7 +244,7 @@ def test_signal_success():
     c, s, a = make_variables('C S A', 2)
     eq1 = Equation('Send', [c], [s], mappings.f_same)
     eq2 = Equation('Recv', [s], [a], mappings.f_same)
-    network = CausalNetwork([eq1, eq2])
+    network = CausalGraph([eq1, eq2])
     root_dist = JointDist({c: [.7, .3]})
 
     m = MeasureSuccess(network, root_dist, payoffs)

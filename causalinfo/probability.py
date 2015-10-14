@@ -42,10 +42,10 @@ class Variable(object):
 
     def make_valid_distribution(self, distn):
         """Convert distribution and check it."""
-        np_distn = np.array(distn, dtype=float)
-        assert np_distn.shape == (self.n_states,)
-        assert np.isclose(np_distn.sum(), 1.0)
-        return np_distn
+        valid_dist = np.array(distn, dtype=float)
+        assert valid_dist.shape == (self.n_states,)
+        assert np.isclose(valid_dist.sum(), 1.0)
+        return valid_dist
 
     def __repr__(self):
         return '<{}>'.format(self.name)
