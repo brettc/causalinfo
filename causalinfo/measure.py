@@ -132,7 +132,7 @@ def randomise(i1, i2, o1):
 def test1():
     from probability import make_variables, JointDist
     from network import Equation, CausalGraph
-    from fitness import PayoffMatrix
+    from payoff import PayoffMatrix
     import mappings
     c, s, k, a = make_variables('C S K A', 2)
     eq1 = Equation('Send', [c, k], [s], randomise)
