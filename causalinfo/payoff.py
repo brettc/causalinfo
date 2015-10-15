@@ -1,14 +1,18 @@
 import pandas as pd
 
+from probability import TreeDistribution
 from util import cartesian
+from probability import JointDistByState
 
 
 class PayoffMatrix(object):
     LABEL = 'Payoff'
 
     def __init__(self, inputs, outputs, mapping_func):
-        self.inputs = inputs
-        self.outputs = outputs
+        # Take copies. Note that the ordering is important here, and it must
+        # be consistent over all of the calculations. 
+        self.inputs = inputs[:]
+        self.outputs = outputs[:]
         self.input_names = [vi.name for vi in self.inputs]
         self.output_names = [vo.name for vo in self.outputs]
 
@@ -30,6 +34,7 @@ class PayoffMatrix(object):
         env = tuple([assignments[vi] for vi in self.inputs])
         out = tuple([assignments[vo] for vo in self.outputs])
 
+        # Go and find out what the payoff is.
         return self.fitness_lookup[(env, out)]
 
     def to_frame(self):
@@ -52,6 +57,15 @@ class PayoffMatrix(object):
                               index=self.input_names,
                               columns=self.output_names)
 
+    def fitness_of(self, dist):
+        """Calculate the fitness of a TreeDistribution"""
+        assert isinstance(dist, TreeDistribution)
+        fit = 0.0
+        for ass, p in dist.iter_assignments():
+            f = self.fitness_from_assignments(ass)
+            fit += f * p
+        return fit
+
     def _repr_html_(self):
         # noinspection PyProtectedMember
         return self.to_frame()._repr_html_()
@@ -59,20 +73,27 @@ class PayoffMatrix(object):
 
 def test1():
     from probability import make_variables
+
     def m1(A, C1, C2):
         if (C1 and C2) == A:
             if C1:
-                return 5.0
+                return 5
             return 2
-        return 0.0
+
+        return 0
 
     c, s, a = make_variables('C S A', 2)
     c1, c2 = make_variables('C1 C2', 2)
 
     p = PayoffMatrix([c1, c2], [a], m1)
-    print p.fitness_lookup
-    print p.fitness_from_assignments({c1: 1, c2: 1, a: 1})
-    print p.to_frame()
+    # net = CausalGraph([eq1, eq2])
+    # print p.fitness_lookup
+    # print p.fitness_from_assignments({c1: 1, c2: 1, a: 1})
+    # print p.to_frame()
+
+    t = JointDistByState({c1: 0, s: 0})
+
+    print t.probabilities
 
 
 if __name__ == '__main__':

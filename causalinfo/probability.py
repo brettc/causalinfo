@@ -8,7 +8,7 @@ class Variable(object):
     """A discrete variable, with a distribution over N states.
     """
 
-    USED_NAMES = set()
+    # USED_NAMES = set()
 
     def __init__(self, name, n_states):
         """Name the variable, and say how many states it has. Variables start

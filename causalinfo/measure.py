@@ -1,3 +1,4 @@
+from causalinfo.payoff import PayoffMatrix
 from network import CausalGraph
 from probability import JointDistByState, Distribution
 
@@ -100,6 +101,7 @@ class MeasureCause(object):
 class MeasureSuccess(MeasureCause):
     def __init__(self, network, root_dist, payoffs):
         super(MeasureSuccess, self).__init__(network, root_dist)
+        assert isinstance(payoffs, PayoffMatrix)
 
         # This is what happens to this network (without interventions)
         observed = network.generate_joint(root_dist)
@@ -112,59 +114,5 @@ class MeasureSuccess(MeasureCause):
             f = payoffs.fitness_from_assignments(ass)
             print p, ass, f
 
-
-def payoffs(C, A, K):
-    # K makes no diff!
-    if C == A:
-        if C == 0:
-            return 3
-        return 2
-    return 0
-
-
-def randomise(i1, i2, o1):
-    if i2 == 1:
-        o1[:] = .5
-    else:
-        o1[i1] = 1.0
-
-
-def test1():
-    from probability import make_variables, JointDist
-    from network import Equation, CausalGraph
-    from payoff import PayoffMatrix
-    import mappings
-    c, s, k, a = make_variables('C S K A', 2)
-    eq1 = Equation('Send', [c, k], [s], randomise)
-    eq2 = Equation('Recv', [s], [a], mappings.f_same)
-    net = CausalGraph([eq1, eq2])
-    root_dist = JointDist({c: [.5, .5], k: [.5, .5]})
-    pm = PayoffMatrix([c, k], [a], payoffs)
-    print pm.to_frame()
-    fm = MeasureSuccess(net, root_dist, pm)
-    print fm.average_sad(s, a)
-
-    x = pm.to_frame()
-    x['m'] = x.apply(max, axis=1)
-    print x
-    print sum(x['m'])
-
-    # This is what happens to this net (without interventions)
-    # observed = net.generate_joint(root_dist)
-    # fits = []
-    # for ass, p in obs
-    #
-    #
-    # s_dist = net.generate_joint(root_dist).joint(s)
-    # tot = 0.0
-    # for ass, p in root_dist.iter_assignments():
-    #     j = JointDistByState(ass)
-    #     d = net.generate_joint(j, do_dist=s_dist)
-    #     f = pm.fitness_from_assignments(ass)
-    #     print p, f, d.mutual_info(s, a)
-    #     tot += p * d.mutual_info(s, a)
-    # print tot
-
-
-if __name__ == '__main__':
-    test1()
+    def payoff_for_signal(self, s, dist):
+        pass

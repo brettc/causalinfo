@@ -38,5 +38,4 @@ def test_variable_init():
 def test_equation_init():
     a, b, c = make_variables('a b c', 2)
     e1 = Equation('xor', [a, b], [c], mappings.f_xor)
-    print e1.mapping_table()
-
+    print e1.to_frame()

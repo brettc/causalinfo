@@ -16,9 +16,11 @@ NOTES
 def f_same(i, o):
     o[i] = 1.0
 
+
 def f_rotate_right(i, o):
     ii = (i + 1) % len(o)
     o[ii] = 1.0
+
 
 def f_xnor(i1, i2, o):
     if i1 == i2:

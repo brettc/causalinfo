@@ -3,7 +3,7 @@ from numpy import log2
 
 from causalinfo.probability import (make_variables, UniformDist, JointDist)
 from causalinfo.network import Equation, CausalGraph
-from causalinfo.measure import MeasureCause, MeasureSuccess
+from causalinfo.measure import MeasureCause
 from causalinfo import mappings
 
 
@@ -238,8 +238,10 @@ def xxtest_diamond():
 
 
 def test_signal_success():
-    def payoffs(cval):
-        return cval
+    def payoffs(C, A):
+        if C == A:
+            return 1
+        return 0
 
     c, s, a = make_variables('C S A', 2)
     eq1 = Equation('Send', [c], [s], mappings.f_same)
@@ -247,6 +249,4 @@ def test_signal_success():
     network = CausalGraph([eq1, eq2])
     root_dist = JointDist({c: [.7, .3]})
 
-    m = MeasureSuccess(network, root_dist, payoffs)
-    m.payoffs()
-
+    # m = MeasureSuccess(network, root_dist, PayoffMatrix([c], [a], payoffs))
