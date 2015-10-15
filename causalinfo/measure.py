@@ -4,15 +4,15 @@ from probability import JointDistByState, Distribution
 
 
 class MeasureCause(object):
-    def __init__(self, network, root_dist):
-        assert isinstance(network, CausalGraph)
+    def __init__(self, graph, root_dist):
+        assert isinstance(graph, CausalGraph)
         assert isinstance(root_dist, Distribution)
 
-        self.network = network
+        self.graph = graph
         self.root_dist = root_dist
 
     def mutual_info(self, a_var, b_var, c_var=None):
-        j_observe = self.network.generate_joint(self.root_dist)
+        j_observe = self.graph.generate_joint(self.root_dist)
         return j_observe.mutual_info(a_var, b_var, c_var)
 
     def causal_flow(self, a_var, b_var, s_var=None):
@@ -45,17 +45,17 @@ class MeasureCause(object):
             return self._causal_flow_null(a_var, b_var)
 
         # 1. First, we simply observe the 'imposed' variable S as it occurs.
-        j_observe = self.network.generate_joint(self.root_dist)
+        j_observe = self.graph.generate_joint(self.root_dist)
         do_s_var = j_observe.joint(s_var)
 
         # 2. We then use the observed distribution of s to intervene,
         #    and record the resulting joint distribution of s and a
-        j_do_s = self.network.generate_joint(self.root_dist, do_dist=do_s_var)
+        j_do_s = self.graph.generate_joint(self.root_dist, do_dist=do_s_var)
         sa_dist = j_do_s.joint(s_var, a_var)
 
         # 3. We need to assign using the probabilities of DOING (s and a),
         #    thus need to supply a joint probability over the two of them!
-        j_do_a_s = self.network.generate_joint(self.root_dist, do_dist=sa_dist)
+        j_do_a_s = self.graph.generate_joint(self.root_dist, do_dist=sa_dist)
 
         # 4. Now we simply calculate the conditional mutual information over
         #    this final distribution.
@@ -65,11 +65,11 @@ class MeasureCause(object):
         """Simple un-conditional version of above"""
 
         # 1. Observe a
-        j_observe = self.network.generate_joint(self.root_dist)
+        j_observe = self.graph.generate_joint(self.root_dist)
         see_a = j_observe.joint(a_var)
 
         # 2. Use observed distribution of a, but now 'do' it.
-        j_do_a = self.network.generate_joint(self.root_dist, do_dist=see_a)
+        j_do_a = self.graph.generate_joint(self.root_dist, do_dist=see_a)
         return j_do_a.mutual_info(a_var, b_var)
 
     def average_sad(self, a_var, b_var):
@@ -87,32 +87,79 @@ class MeasureCause(object):
         """
         tot = 0.0
         # First, get the unconditional distribution of the variable a_var
-        a_dist = self.network.generate_joint(self.root_dist).joint(a_var)
+        a_dist = self.graph.generate_joint(self.root_dist).joint(a_var)
 
         # Now average this across all of the root assignments 'doing a' with
         # the above distribution.
         for ass, p in self.root_dist.iter_assignments():
             j = JointDistByState(ass)
-            d = self.network.generate_joint(j, do_dist=a_dist)
+            d = self.graph.generate_joint(j, do_dist=a_dist)
             tot += p * d.mutual_info(a_var, b_var)
         return tot
 
 
 class MeasureSuccess(MeasureCause):
-    def __init__(self, network, root_dist, payoffs):
-        super(MeasureSuccess, self).__init__(network, root_dist)
+    def __init__(self, graph, root_dist, payoffs):
+        super(MeasureSuccess, self).__init__(graph, root_dist)
+
         assert isinstance(payoffs, PayoffMatrix)
+        self.payoffs = payoffs
 
-        # This is what happens to this network (without interventions)
-        observed = network.generate_joint(root_dist)
+        # # This is what happens to this network (without interventions)
+        # observed = network.generate_joint(root_dist)
+        #
+        # # Let's look at just the inputs and outputs
+        # inputs_and_outputs = list(self.network.inputs) + list(self.network.outputs)
+        # results = observed.joint(inputs_and_outputs)
+        #
+        # for ass, p in results.iter_assignments():
+        #     f = payoffs.fitness_from_assignments(ass)
+        #     print p, ass, f
 
-        # Let's look at just the inputs and outputs
-        inputs_and_outputs = list(self.network.inputs) + list(self.network.outputs)
-        results = observed.joint(inputs_and_outputs)
+    def payoff_for_signal(self, signal_var, world_var):
+        """Generate the various payoffs
 
-        for ass, p in results.iter_assignments():
-            f = payoffs.fitness_from_assignments(ass)
-            print p, ass, f
+        :param signal_var: The signal under manipulation.
+        :param world_var: All or less of the root variables
+        :return:
+        """
 
-    def payoff_for_signal(self, s, dist):
-        pass
+        # 1. Work out the actual fitness
+        observed = self.graph.generate_joint(self.root_dist)
+        actual_fitness = self.payoffs.fitness_of(observed)
+
+        # 2. Get the best signal to send in each environment. This requires
+        #    constructing a payoff matrix for the signal against world.
+
+        # TODO: Actually make a table we can see out of this.
+        tot = 0.0
+        table = {}
+        for ass, p in self.root_dist.joint(world_var).iter_assignments():
+            # Record the current maximum
+            cur_mx = 0.0
+
+            # Go through each of the possible signal states.
+            for sval in signal_var.states:
+                curr_ass = {signal_var: sval}
+                # Add in the assignments from the environments and generate a
+                # joint distbution based on this.
+                curr_ass.update(ass)
+                j = JointDistByState(curr_ass)
+                d = self.graph.generate_joint(self.root_dist, do_dist=j)
+                f = self.payoffs.fitness_of(d)
+
+                # Update the table tracking the fitness across particular
+                # signal state.
+                table.setdefault(sval, []).append(f * p)
+
+                # What is the best choice so far?
+                if f > cur_mx:
+                    cur_mx = f
+
+            # Ok, we now know the best signal to send in this world state.
+            tot += p * cur_mx
+
+        best_possible_fitness = tot
+        best_fixed_fitness = max(sum(x) for x in table.values())
+
+        return actual_fitness, best_possible_fitness, best_fixed_fitness
