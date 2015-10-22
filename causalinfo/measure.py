@@ -1,6 +1,7 @@
+import pandas as pd
 from causalinfo.payoff import PayoffMatrix
 from network import CausalGraph
-from probability import JointDistByState, Distribution
+from probability import JointDistByState, Distribution, expand_variables
 
 
 class MeasureCause(object):
@@ -53,8 +54,9 @@ class MeasureCause(object):
         j_do_s = self.graph.generate_joint(self.root_dist, do_dist=do_s_var)
         sa_dist = j_do_s.joint(s_var, a_var)
 
-        # 3. We need to assign using the probabilities of DOING (s and a),
-        #    thus need to supply a joint probability over the two of them!
+        # 3. We now calculate the distribution yet again, doing (s and a) this
+        #    time. The resulting distribution will be the 'modified
+        #    distribution' outlined above.
         j_do_a_s = self.graph.generate_joint(self.root_dist, do_dist=sa_dist)
 
         # 4. Now we simply calculate the conditional mutual information over
@@ -77,8 +79,8 @@ class MeasureCause(object):
 
         (s)pecific (a)ctual (d)ifference making, averaged across all
         environments.  This assumes that the intervention distribution is the
-        global distribution (as in causal flow). Note that this calculation is
-        equivalent to:
+        unconditional (global) distribution (as in causal flow). Note that
+        this calculation is equivalent to:
 
         I(X_A -> X_B | NOT(X_A))
 
@@ -109,7 +111,8 @@ class MeasureSuccess(MeasureCause):
         # observed = network.generate_joint(root_dist)
         #
         # # Let's look at just the inputs and outputs
-        # inputs_and_outputs = list(self.network.inputs) + list(self.network.outputs)
+        # inputs_and_outputs = list(self.network.inputs) + list(
+        # self.network.outputs)
         # results = observed.joint(inputs_and_outputs)
         #
         # for ass, p in results.iter_assignments():
@@ -130,8 +133,6 @@ class MeasureSuccess(MeasureCause):
 
         # 2. Get the best signal to send in each environment. This requires
         #    constructing a payoff matrix for the signal against world.
-
-        # TODO: Actually make a table we can see out of this.
         tot = 0.0
         table = {}
         for ass, p in self.root_dist.joint(world_var).iter_assignments():
@@ -140,11 +141,15 @@ class MeasureSuccess(MeasureCause):
 
             # Go through each of the possible signal states.
             for sval in signal_var.states:
+                # Assign the state to the variable...
                 curr_ass = {signal_var: sval}
-                # Add in the assignments from the environments and generate a
-                # joint distbution based on this.
+                # Add in the assignments from the environment and generate a
+                # joint distribution based on this.
                 curr_ass.update(ass)
                 j = JointDistByState(curr_ass)
+
+                # Now "do" this distribution on the causal graph, and record
+                # the payoffs.
                 d = self.graph.generate_joint(self.root_dist, do_dist=j)
                 f = self.payoffs.fitness_of(d)
 
@@ -162,4 +167,59 @@ class MeasureSuccess(MeasureCause):
         best_possible_fitness = tot
         best_fixed_fitness = max(sum(x) for x in table.values())
 
-        return actual_fitness, best_possible_fitness, best_fixed_fitness
+        return {
+            'act': round(actual_fitness, 2),
+            'opt': round(best_possible_fitness, 2),
+            'fix': round(best_fixed_fitness, 2),
+            'gain': round(best_possible_fitness - best_fixed_fitness, 2),
+        }
+
+    def generate_signal_payoff(self, signal_var, world_var):
+
+        # There could be one or more...
+        world_var = expand_variables(world_var)
+        world_var_names = [v.name for v in world_var]
+
+        data = {"F": [], signal_var.name: []}
+        data.update(dict([(name, []) for name in world_var_names]))
+
+        for ass, p in self.root_dist.joint(world_var).iter_assignments():
+            # Go through each of the possible signal states.
+            for sval in signal_var.states:
+                for v, val in ass.items():
+                    data[v.name].append(val)
+                data[signal_var.name].append(sval)
+
+                # Assign the state to the variable...
+                curr_ass = {signal_var: sval}
+                # Add in the assignments from the environment and generate a
+                # joint distbution based on this.
+                curr_ass.update(ass)
+                j = JointDistByState(curr_ass)
+
+                # Now "do" this distribution on the causal graph, and record
+                # the payoffs.
+                d = self.graph.generate_joint(self.root_dist, do_dist=j)
+                f = self.payoffs.fitness_of(d)
+
+                data["F"].append(f * p)
+
+        all_data = pd.DataFrame(data=data)
+        return pd.pivot_table(data=all_data, values=["F"],
+                              index=world_var_names,
+                              columns=[signal_var.name])
+
+    def weighted_average_sad(self, a_var, b_var):
+        # TODO: The plan is to weight the individuals contributions in each
+        # environment by the success they have.
+        tot = 0.0
+        # First, get the unconditional distribution of the variable a_var
+        a_dist = self.graph.generate_joint(self.root_dist).joint(a_var)
+
+        # Now average this across all of the root assignments 'doing a' with
+        # the above distribution.
+        for ass, p in self.root_dist.iter_assignments():
+            j = JointDistByState(ass)
+            d = self.graph.generate_joint(j, do_dist=a_dist)
+            tot += p * d.mutual_info(a_var, b_var)
+        return tot

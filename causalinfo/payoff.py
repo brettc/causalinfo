@@ -6,11 +6,14 @@ from probability import JointDistByState
 
 
 class PayoffMatrix(object):
+    """Holds a payoff matrix relating two sets of variables
+    """
+
     LABEL = 'Payoff'
 
     def __init__(self, inputs, outputs, mapping_func):
         # Take copies. Note that the ordering is important here, and it must
-        # be consistent over all of the calculations. 
+        # be consistent over all of the calculations.
         self.inputs = inputs[:]
         self.outputs = outputs[:]
         self.input_names = [vi.name for vi in self.inputs]
@@ -26,6 +29,9 @@ class PayoffMatrix(object):
             for out in all_outs:
                 out_dict = dict(zip(self.output_names, out))
                 out_dict.update(env_dict)
+                # This magically transforms the names into variables. I think
+                # this is an okay approach, but it might be a bit confusing to
+                # the newcomer.
                 fitness = mapping_func(**out_dict)
                 self.fitness_lookup[(tuple(env), tuple(out))] = float(fitness)
 
@@ -39,6 +45,9 @@ class PayoffMatrix(object):
 
     def to_frame(self):
         """Convert to DataFrame for nice display"""
+
+        # TODO: Thinks... can we just store it in this format, and use pandas
+        # indexing for the lookup?
         data = {}
         data.update(dict([(i_var.name, []) for i_var in self.inputs]))
         data.update(dict([(o_var.name, []) for o_var in self.outputs]))
@@ -52,7 +61,8 @@ class PayoffMatrix(object):
             data[PayoffMatrix.LABEL].append(f)
 
         all_data = pd.DataFrame(data=data)
-        # The magnificent pivot table function does all the work
+
+        # Return a table that looks like a ... Payoff Matrix! Tada!
         return pd.pivot_table(data=all_data, values=[PayoffMatrix.LABEL],
                               index=self.input_names,
                               columns=self.output_names)
