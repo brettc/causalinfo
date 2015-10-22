@@ -3,12 +3,19 @@ import numpy as np
 
 from util import cartesian
 
+class Namespace(object):
+    def __init__(self):
+        pass
+
+    def add(self, name, obj):
+        setattr(self, name, obj)
+
+vs = Namespace()
+
 
 class Variable(object):
     """A discrete variable, with a distribution over N states.
     """
-
-    # USED_NAMES = set()
 
     def __init__(self, name, n_states):
         """Name the variable, and say how many states it has. Variables start
@@ -17,17 +24,13 @@ class Variable(object):
         assert isinstance(name, str)
         assert name.isalnum()
 
-        # TODO: CURRENTLY DISABLED -- do we need it?
-        # Names must uniquely identify the variables (as they're used to
-        # identify the columns in our tables).
-        # assert name not in Variable.USED_NAMES
-        # Variable.USED_NAMES.add(name)
-
         self.name = name
         self.n_states = n_states
 
         # Generate the actual states; this makes it easy to work with.
         self.states = range(n_states)
+
+        vs.add(name, self)
 
     def uniform(self):
         """Return a uniform distribution for this variable."""
