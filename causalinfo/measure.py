@@ -167,12 +167,7 @@ class MeasureSuccess(MeasureCause):
         best_possible_fitness = tot
         best_fixed_fitness = max(sum(x) for x in table.values())
 
-        return {
-            'act': round(actual_fitness, 2),
-            'opt': round(best_possible_fitness, 2),
-            'fix': round(best_fixed_fitness, 2),
-            'gain': round(best_possible_fitness - best_fixed_fitness, 2),
-        }
+        return actual_fitness, best_fixed_fitness, best_possible_fitness
 
     def generate_signal_payoff(self, signal_var, world_var):
 
