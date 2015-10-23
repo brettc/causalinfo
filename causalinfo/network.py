@@ -45,7 +45,8 @@ class Equation(object):
 
             # Each of the output distributions must sum to 1.0
             for r in results:
-                assert np.isclose(r.sum(), 1.0)
+                if not np.isclose(r.sum(), 1.0):
+                    raise RuntimeError("Probabilities must add to 1.0: {}".format(r))
 
             # Keep this around
             self.lookup[states] = results
@@ -167,6 +168,11 @@ class CausalGraph(object):
             if isinstance(n, Equation):
                 network.node[n]['shape'] = 'diamond'
 
+    def generate_joint(self, root_dist, do_dist=None):
+        """Get the joint distribution, given root & do variables"""
+        tree = self.generate_tree(root_dist, do_dist)
+        return TreeDistribution(tree)
+
     def generate_tree(self, root_dist, do_dist=None):
         """Generate the ProbabilityTree"""
 
@@ -187,11 +193,6 @@ class CausalGraph(object):
                 self._evaluate_branch(b, self.ordered_nodes)
 
         return tree
-
-    def generate_joint(self, root_dist, do_dist=None):
-        """Get the joint distribution, given root & do variables"""
-        tree = self.generate_tree(root_dist, do_dist)
-        return TreeDistribution(tree)
 
     def _evaluate_branch(self, branch, remaining_nodes):
         """Recursively evaluate all possibilities, building a probability tree"""

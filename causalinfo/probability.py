@@ -331,9 +331,10 @@ class TreeDistribution(Distribution):
     """
 
     def __init__(self, tree, ordering=None):
+        super(TreeDistribution, self).__init__(tree.variables)
         if not ordering:
             ordering = []
-        super(TreeDistribution, self).__init__(tree.variables)
+
         # Let's keep this around
         self.tree = tree
 
