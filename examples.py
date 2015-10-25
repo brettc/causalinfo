@@ -226,7 +226,7 @@ def plot(pth):
         a.set_ylabel("Bits")
 
     for a in best, act:
-        a.set_ylim(0, 1.1)
+        a.set_ylim(0, 1.0)
         a.set_yticks(np.linspace(0, 1, 5))
         a.set_ylabel("Fitness")
 
@@ -236,10 +236,12 @@ def plot(pth):
 
 if __name__ == '__main__':
     # controlled_diamond()
-    mismapping()
-    plot('mismapping.pickle')
+    # mismapping()
     # noisy()
     # reducedspec()
+    plot('mismapping.pickle')
+    plot('noisy.pickle')
+    plot('reducedspec.pickle')
 
 
 
