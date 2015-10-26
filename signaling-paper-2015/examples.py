@@ -13,13 +13,19 @@ Options:
 import numpy as np
 import pandas as pd
 import seaborn as sb
-import pathlib
+import networkx as nx
+from pathlib import Path
+import sys
 
+_here = Path(__file__).absolute().parent
+_package_folder = _here.parent
+sys.path.append(str(_package_folder))
 
 from causalinfo import (
     make_variables, JointDist, Equation, CausalGraph, PayoffMatrix,
     MeasureSuccess, mappings, vs, MeasureCause, Variable
 )
+
 
 def controlled_diamond():
     def simple_payoff(C1, C2, A):
@@ -58,9 +64,12 @@ def controlled_diamond():
         tuples.append((p, mi, miact, spec, mi2, miact2, spec2))
         print tuples[-1]
 
-    df = pd.DataFrame.from_records(tuples, index=["Prob"], 
-                                   columns="Prob M_S1C M_S1A S_S1A M_S2C, M_S2A, C_S2A".split()) 
-    df.to_pickle('diamond.pickle')
+    df = pd.DataFrame.from_records(
+        tuples, index=["Prob"],
+        columns="Prob M_S1C M_S1A S_S1A M_S2C, M_S2A, C_S2A".split()
+    )
+
+    df.to_pickle(str(_here / 'diamond.pickle'))
 
 
 def reducedspec():
@@ -86,9 +95,10 @@ def reducedspec():
     c1, s1, a = make_variables('C1 S1 A', 4)
     c2, s2 = make_variables('C2 S2', 2)
     eq1 = Equation('Send1', [c1], [s1], mappings.f_same)
-    eq2 = Equation('Send2', [c2], [s2], mappings.f_same)
-    eq3 = Equation('Rec1', [s1, s2], [a], merge)
-    gr = CausalGraph([eq1, eq2, eq3])
+    # eq2 = Equation('Send2', [c2], [s2], mappings.f_same)
+    eq3 = Equation('Rec1', [s1, c2], [a], merge)
+    gr = CausalGraph([eq1, eq3])
+    nx.to_agraph(gr.full_network).draw('reducedspec.png', prog='dot')
     po = PayoffMatrix([c1, c2], [a], simple_payoff)
 
     tuples = []
@@ -106,9 +116,12 @@ def reducedspec():
         tuples.append((p, mi, miact, spec, bestval, actval))
         print tuples[-1]
 
-    df = pd.DataFrame.from_records(tuples, index=["Prob"], 
-                                   columns="Prob Mutual MutualA Spec Best Actual".split()) 
-    df.to_pickle('reducedspec.pickle')
+    df = pd.DataFrame.from_records(
+        tuples, index=["Prob"], 
+        columns="Prob Mutual MutualA Spec Best Actual".split()
+    )
+
+    df.to_pickle(str(_here / 'reducedspec.pickle'))
 
 
 def noisy():
@@ -128,6 +141,7 @@ def noisy():
     eq1 = Equation('Send', [c, k], [s], randomise)
     eq2 = Equation('Recv', [s], [a], mappings.f_same)
     gr = CausalGraph([eq1, eq2])
+    nx.to_agraph(gr.full_network).draw('noisy.png', prog='dot')
     po = PayoffMatrix([c, k], [a], payoffs_simple)
 
     tuples = []
@@ -145,9 +159,12 @@ def noisy():
         tuples.append((p, mi, miact, spec, bestval, actval))
         print tuples[-1]
 
-    df = pd.DataFrame.from_records(tuples, index=["Prob"], 
-                                   columns="Prob Mutual MutualA Spec Best Actual".split()) 
-    df.to_pickle('noisy.pickle')
+    df = pd.DataFrame.from_records(
+        tuples, index=["Prob"], 
+        columns="Prob Mutual MutualA Spec Best Actual".split()
+    )
+
+    df.to_pickle(str(_here / 'noisy.pickle'))
 
 
 def mismapping():
@@ -190,9 +207,12 @@ def mismapping():
     c1, s1, s3, a = make_variables('C1 S1 S3 A', 4)
     c2, s2 = make_variables('C2 S2', 2)
     eq1 = Equation('Send1', [c1], [s1], mappings.f_same)
-    eq2 = Equation('Send2', [c2], [s2], mappings.f_same)
-    eq3 = Equation('Rec1', [s1, s2], [a], merge)
-    network = CausalGraph([eq1, eq2, eq3])
+    # eq2 = Equation('Send2', [c2], [s2], mappings.f_same)
+    eq3 = Equation('Rec1', [s1, c2], [a], merge)
+    network = CausalGraph([eq1, eq3])
+    nx.to_agraph(network.full_network).draw('mismapping.png', prog='dot')
+
+    # nx.draw_graphviz(network.full_network, prog='dot')
     po = PayoffMatrix([c1, c2], [a], simple_payoff)
 
     tuples = []
@@ -211,17 +231,20 @@ def mismapping():
         tuples.append((p, mi, miact, spec, bestval, actval))
         print tuples[-1]
 
-    df = pd.DataFrame.from_records(tuples, index=["Prob"], 
-                                   columns="Prob Mutual MutualA Spec Best Actual".split()) 
-    df.to_pickle('mismapping.pickle')
+    df = pd.DataFrame.from_records(
+        tuples,
+        index=["Prob"],
+        columns="Prob Mutual MutualA Spec Best Actual".split()
+    )
+    df.to_pickle(str(_here / 'mismapping.pickle'))
 
 
 def plot(pth):
-    pth = pathlib.Path(pth)
     df = pd.read_pickle(str(pth))
+    df.drop('MutualA', axis=1, inplace=True)
     axes = df.plot(subplots=True)
-    mi, mia, spec, best, act = axes
-    for a in mi, mia, spec:
+    mi, spec, best, act = axes
+    for a in mi, spec:
         a.set_ylim(0, 2.1)
         a.set_ylabel("Bits")
 
@@ -239,9 +262,9 @@ if __name__ == '__main__':
     # mismapping()
     # noisy()
     # reducedspec()
-    plot('mismapping.pickle')
-    plot('noisy.pickle')
-    plot('reducedspec.pickle')
+    plot(str(_here / 'mismapping.pickle'))
+    plot(str(_here / 'noisy.pickle'))
+    plot(str(_here / 'reducedspec.pickle'))
 
 
 
