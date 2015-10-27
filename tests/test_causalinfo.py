@@ -1,4 +1,4 @@
-from causalinfo import Variable, Equation, make_variables, mappings
+from causalinfo import Variable, Equation, make_variables, equations
 # TODO:
 # if __name__ == '__main__':
 #     import mappings
@@ -37,5 +37,5 @@ def test_variable_init():
 
 def test_equation_init():
     a, b, c = make_variables('a b c', 2)
-    e1 = Equation('xor', [a, b], [c], mappings.f_xor)
+    e1 = Equation('xor', [a, b], [c], equations.f_xor)
     print e1.to_frame()

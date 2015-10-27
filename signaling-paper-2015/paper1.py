@@ -1,9 +1,9 @@
+from tabulate import tabulate
+
 from causalinfo import (
     make_variables, JointDist, Equation, CausalGraph, PayoffMatrix,
-    MeasureSuccess, mappings, Variable, UniformDist
+    MeasureSuccess, equations, UniformDist
 )
-
-from tabulate import tabulate
 
 def layering_case():
 
@@ -27,8 +27,8 @@ def layering_case():
 
     c1, s1, s3, a = make_variables('C1 S1 S3 A', 4)
     c2, s2 = make_variables('C2 S2', 2)
-    eq1 = Equation('Send1', [c1], [s1], mappings.f_same)
-    eq2 = Equation('Send2', [c2], [s2], mappings.f_same)
+    eq1 = Equation('Send1', [c1], [s1], equations.f_same)
+    eq2 = Equation('Send2', [c2], [s2], equations.f_same)
     eq3 = Equation('Rec1', [s1, s2], [a], merge)
     gr = CausalGraph([eq1, eq2, eq3])
     print eq3.to_frame()
@@ -95,8 +95,8 @@ def partial_misrep():
 
     c1, s1, s3, a = make_variables('C1 S1 S3 A', 4)
     c2, s2 = make_variables('C2 S2', 2)
-    eq1 = Equation('Send1', [c1], [s1], mappings.f_same)
-    eq2 = Equation('Send2', [c2], [s2], mappings.f_same)
+    eq1 = Equation('Send1', [c1], [s1], equations.f_same)
+    eq2 = Equation('Send2', [c2], [s2], equations.f_same)
     eq3 = Equation('Rec1', [s1, s2], [a], merge)
     # eq3 = Equation('Rec1', [s1, s2], [a], ignore)
     network = CausalGraph([eq1, eq2, eq3])
@@ -130,7 +130,7 @@ def random_case():
 
     c, s, k, a = make_variables('C S K A', 2)
     eq1 = Equation('Send', [c, k], [s], randomise)
-    eq2 = Equation('Recv', [s], [a], mappings.f_same)
+    eq2 = Equation('Recv', [s], [a], equations.f_same)
     gr = CausalGraph([eq1, eq2])
     root_dist = JointDist({c: [.5, .5], k: [.5, .5]})
     po = PayoffMatrix([c, k], [a], payoffs_simple)
@@ -159,10 +159,10 @@ def noisy_robust():
 
     c, s1, s2, s3, s4, a = make_variables('C S1 S2 S3 S4 A', 2)
     k1, k2 = make_variables('K1 K2', 2)
-    eq1 = Equation('Send', [c], [s1, s2], mappings.f_branch_same)
+    eq1 = Equation('Send', [c], [s1, s2], equations.f_branch_same)
     eq2 = Equation('Recv1', [s1, k1], [s3], noise)
     eq3 = Equation('Recv2', [s2, k2], [s4], noise)
-    eq4 = Equation('Recv3', [s3, s4], [a], mappings.f_or)
+    eq4 = Equation('Recv3', [s3, s4], [a], equations.f_or)
     gr = CausalGraph([eq1, eq2, eq3, eq4])
     root_dist = JointDist({c: [.5] * 2, k1: [.9, .1], k2: [.9, .1]})
     po = PayoffMatrix([c], [a], payoffs_simple)
@@ -191,8 +191,8 @@ def basic_signal():
         return 0
 
     c, s, a = make_variables('C S A', 2)
-    eq1 = Equation('Send', [c], [s], mappings.f_same)
-    eq2 = Equation('Recv', [s], [a], mappings.f_same)
+    eq1 = Equation('Send', [c], [s], equations.f_same)
+    eq2 = Equation('Recv', [s], [a], equations.f_same)
     network = CausalGraph([eq1, eq2])
     # root_dist = JointDist({c: [.3, .7]})
     root_dist = UniformDist(c)
@@ -207,7 +207,7 @@ def basic_signal():
     print tabulate(stab, tablefmt='pipe', headers='keys')
     print m.payoff_for_signal(s, c)
 
-    eq2 = Equation('Recv', [s], [a], mappings.f_rotate_right)
+    eq2 = Equation('Recv', [s], [a], equations.f_rotate_right)
     network = CausalGraph([eq1, eq2])
     # root_dist = JointDist({c: [.3, .7]})
     m = MeasureSuccess(network, root_dist, po)
@@ -223,8 +223,8 @@ def signal_of_for():
         return 0
 
     c, s, a, k = make_variables('C S A K', 2)
-    eq1 = Equation('Send', [c], [s, k], mappings.f_branch_same)
-    eq2 = Equation('Recv', [s], [a], mappings.f_same)
+    eq1 = Equation('Send', [c], [s, k], equations.f_branch_same)
+    eq2 = Equation('Recv', [s], [a], equations.f_same)
     network = CausalGraph([eq1, eq2])
     root_dist = JointDist({c: [.7, .3]})
     po = PayoffMatrix([c], [a], payoffs)

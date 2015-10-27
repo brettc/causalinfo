@@ -10,12 +10,12 @@ Options:
   --version     Show version.
 """
 # from docopt import docopt
+import sys
+
 import numpy as np
 import pandas as pd
-import seaborn as sb
 import networkx as nx
 from pathlib import Path
-import sys
 
 _here = Path(__file__).absolute().parent
 _package_folder = _here.parent
@@ -23,53 +23,8 @@ sys.path.append(str(_package_folder))
 
 from causalinfo import (
     make_variables, JointDist, Equation, CausalGraph, PayoffMatrix,
-    MeasureSuccess, mappings, vs, MeasureCause, Variable
+    MeasureSuccess, equations, Variable
 )
-
-
-def controlled_diamond():
-    def simple_payoff(C1, C2, A):
-        # Full spec, ignore C2
-        if C1 == A:
-            return 1
-        return 0
-
-    c1, c2, s1, s2, s3, s4, a = make_variables('C1 C2 S1 S2 S3 S4 A', 2)
-    eq2 = Equation('SAMEB', [c1], [s1, s2], mappings.f_branch_same)
-    eq1 = Equation('SAME', [c2], [s3], mappings.f_same)
-    eq3 = Equation('AND', [s2, s3], [s4], mappings.f_and)
-    eq4 = Equation('OR', [s1, s4], [a], mappings.f_or)
-    gr = CausalGraph([eq1, eq2, eq3, eq4])
-    # po = PayoffMatrix([c1, c2], [a], simple_payoff)
-
-    # Let's just use Uniform
-    # Mutual info is pretty useless, as it is the same across these...
-    # assert m.mutual_info(s2, a1) == m.mutual_info(s3, a1)
-    #
-    # # Look how much better average sad is!
-    # assert m.average_sad(s2, a1) < m.average_sad(s3, a1)
-    tuples = []
-    for p in np.linspace(0, 1, 10):
-        root_dist = JointDist({c1: [.5] * 2, c2: [1 - p, p]})
-        m = MeasureCause(gr, root_dist)
-        mi = m.mutual_info(c1, s1)
-        miact = m.mutual_info(a, s1)
-        mi2 = m.mutual_info(c1, s2)
-        miact2 = m.mutual_info(a, s2)
-        spec = m.average_sad(s1, a)
-        spec2 = m.average_sad(s2, a)
-        # actual, fixed, best = m.payoff_for_signal(s1, [c1, c2])
-        # bestval = best - fixed
-        # actval = actual - fixed
-        tuples.append((p, mi, miact, spec, mi2, miact2, spec2))
-        print tuples[-1]
-
-    df = pd.DataFrame.from_records(
-        tuples, index=["Prob"],
-        columns="Prob M_S1C M_S1A S_S1A M_S2C, M_S2A, C_S2A".split()
-    )
-
-    df.to_pickle(str(_here / 'diamond.pickle'))
 
 
 def reducedspec():
@@ -94,7 +49,7 @@ def reducedspec():
 
     c1, s1, a = make_variables('C1 S1 A', 4)
     c2, s2 = make_variables('C2 S2', 2)
-    eq1 = Equation('Send1', [c1], [s1], mappings.f_same)
+    eq1 = Equation('Send1', [c1], [s1], equations.f_same)
     # eq2 = Equation('Send2', [c2], [s2], mappings.f_same)
     eq3 = Equation('Rec1', [s1, c2], [a], merge)
     gr = CausalGraph([eq1, eq3])
@@ -139,7 +94,7 @@ def noisy():
     c, s, a = make_variables('C S A', 4)
     k = Variable('K', 2)
     eq1 = Equation('Send', [c, k], [s], randomise)
-    eq2 = Equation('Recv', [s], [a], mappings.f_same)
+    eq2 = Equation('Recv', [s], [a], equations.f_same)
     gr = CausalGraph([eq1, eq2])
     nx.to_agraph(gr.full_network).draw('noisy.png', prog='dot')
     po = PayoffMatrix([c, k], [a], payoffs_simple)
@@ -206,7 +161,7 @@ def mismapping():
 
     c1, s1, s3, a = make_variables('C1 S1 S3 A', 4)
     c2, s2 = make_variables('C2 S2', 2)
-    eq1 = Equation('Send1', [c1], [s1], mappings.f_same)
+    eq1 = Equation('Send1', [c1], [s1], equations.f_same)
     # eq2 = Equation('Send2', [c2], [s2], mappings.f_same)
     eq3 = Equation('Rec1', [s1, c2], [a], merge)
     network = CausalGraph([eq1, eq3])
@@ -240,6 +195,8 @@ def mismapping():
 
 
 def plot(pth):
+    assert isinstance(pth, Path)
+
     df = pd.read_pickle(str(pth))
     df.drop('MutualA', axis=1, inplace=True)
     axes = df.plot(subplots=True)
@@ -262,9 +219,9 @@ if __name__ == '__main__':
     # mismapping()
     # noisy()
     # reducedspec()
-    plot(str(_here / 'mismapping.pickle'))
-    plot(str(_here / 'noisy.pickle'))
-    plot(str(_here / 'reducedspec.pickle'))
+    plot(_here / 'mismapping.pickle')
+    plot(_here / 'noisy.pickle')
+    plot(_here / 'reducedspec.pickle')
 
 
 
