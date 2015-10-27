@@ -46,7 +46,8 @@ class Equation(object):
             # Each of the output distributions must sum to 1.0
             for r in results:
                 if not np.isclose(r.sum(), 1.0):
-                    raise RuntimeError("Probabilities must add to 1.0: {}".format(r))
+                    raise RuntimeError(
+                        "Probabilities must add to 1.0: {}".format(r))
 
             # Keep this around
             self.lookup[states] = results
@@ -195,7 +196,7 @@ class CausalGraph(object):
         return tree
 
     def _evaluate_branch(self, branch, remaining_nodes):
-        """Recursively evaluate all possibilities, building a probability tree"""
+        """Recursively evaluate all possibilities, building a tree"""
         current_eq = None
         next_nodes = []
 

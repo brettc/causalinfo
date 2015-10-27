@@ -3,12 +3,14 @@ import numpy as np
 
 from util import cartesian
 
+
 class Namespace(object):
     def __init__(self):
         pass
 
     def add(self, name, obj):
         setattr(self, name, obj)
+
 
 vs = Namespace()
 
@@ -134,12 +136,14 @@ class Distribution(object):
             if is_single:
                 assignments = {self.variables[0]: indexes}
             else:
-                assignments = dict([(v, val) for v, val in zip(self.variables, indexes)])
+                assignments = dict(
+                    [(v, val) for v, val in zip(self.variables, indexes)])
             pr = columns[Distribution.P_LABEL]
             yield assignments, pr
 
     def entropy(self, *variables):
-        """Calculate the entropy of one or more variables in this distribution."""
+        """Calculate the entropy of one or more variables in this
+        distribution."""
         return self._calc_entropy(self.joint(*variables).probabilities)
 
     def mutual_info(self, v1, v2, v3=None):
@@ -181,6 +185,7 @@ class Distribution(object):
 class JointDist(Distribution):
     """Construct a joint distribution assuming independence
     """
+
     def __init__(self, assignments):
         super(JointDist, self).__init__(assignments.keys())
 
@@ -218,13 +223,16 @@ class JointDist(Distribution):
 
 class JointDistByState(JointDist):
     """Construct joint distribution where one state has p=1.0"""
+
     def __init__(self, state_assignments):
-        assignments = dict([(v, v.with_state(s)) for v, s in state_assignments.items()])
+        assignments = dict(
+            [(v, v.with_state(s)) for v, s in state_assignments.items()])
         super(JointDistByState, self).__init__(assignments)
 
 
 class UniformDist(JointDist):
     """A handy class for constructing joint distributions"""
+
     def __init__(self, *vs):
         assignments = dict([(v, v.uniform()) for v in vs])
         super(UniformDist, self).__init__(assignments)
@@ -232,6 +240,7 @@ class UniformDist(JointDist):
 
 class ProbabilityTree(object):
     """A container for Probability Branches"""
+
     def __init__(self):
         self.variables = set()
         self.root = ProbabilityBranch(self, None, 1.0)
@@ -315,7 +324,8 @@ class ProbabilityBranch(object):
             if prob == 0.0:
                 continue
 
-            self.branches.append(ProbabilityBranch(self.tree, self, prob, assign))
+            self.branches.append(
+                ProbabilityBranch(self.tree, self, prob, assign))
 
     @property
     def is_leaf(self):
