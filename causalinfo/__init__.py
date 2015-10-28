@@ -19,7 +19,7 @@ __version__ = "1.0.0"
 
 __title__ = "causalinfo"
 __description__ = "Information Measures on Causal Graphs."
-__uri__ = "http://github/brettc/causalinfo/"
+__uri__ = "https://github/brettc/causalinfo/"
 
 __author__ = "Brett Calcott"
 __email__ = "brett.calcott@gmail.com"
