@@ -1,0 +1,24 @@
+strict digraph  {
+	node [label="\N"];
+	"Equation<branch>"	 [label=branch,
+		shape=diamond];
+	"<S1>"	 [label=S1];
+	"Equation<branch>" -> "<S1>";
+	"<S2>"	 [label=S2];
+	"Equation<branch>" -> "<S2>";
+	"<C1>"	 [label=C1];
+	"<C1>" -> "Equation<branch>";
+	"Equation<and>"	 [label=and,
+		shape=diamond];
+	"<S3>"	 [label=S3];
+	"Equation<and>" -> "<S3>";
+	"Equation<or>"	 [label=or,
+		shape=diamond];
+	"<S1>" -> "Equation<or>";
+	"<A>"	 [label=A];
+	"Equation<or>" -> "<A>";
+	"<S2>" -> "Equation<and>";
+	"<S3>" -> "Equation<or>";
+	"<C2>"	 [label=C2];
+	"<C2>" -> "Equation<and>";
+}

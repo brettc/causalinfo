@@ -1,3 +1,4 @@
+from causalinfo import Variable, Equation, make_variables, equations
 # TODO:
 # if __name__ == '__main__':
 #     import mappings
@@ -27,4 +28,14 @@
 #     j = net.generate_joint(do=[s])
 #     print j.probabilities
 #     print j.mutual_info(s, a)
-#
+
+
+def test_variable_init():
+    v = Variable('x', 3)
+    print v.states
+
+
+def test_equation_init():
+    a, b, c = make_variables('a b c', 2)
+    e1 = Equation('xor', [a, b], [c], equations.f_xor)
+    print e1.to_frame()
