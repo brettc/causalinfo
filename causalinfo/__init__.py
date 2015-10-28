@@ -18,7 +18,7 @@ import equations
 __version__ = "0.1.0"
 
 __title__ = "causalinfo"
-__description__ = "Attributes without boilerplate."
+__description__ = "Information Measures on Causal Graphs."
 __uri__ = "http://github/brettc/causalinfo/"
 
 __author__ = "Brett Calcott"
