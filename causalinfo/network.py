@@ -159,7 +159,7 @@ class CausalGraph(object):
     def graphviz_prettify(self, network):
         """This just makes things pretty for graphviz output."""
         graph_settings = {
-            'rankdir': 'TB',
+            'rankdir': 'LR',
             'dpi': 60,
         }
         network.graph.update(graph_settings)

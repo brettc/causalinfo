@@ -54,10 +54,10 @@ class PayoffMatrix(object):
         data.update({PayoffMatrix.LABEL: []})
 
         for (env, out), f in self.fitness_lookup.items():
-            for ename, e in zip(self.input_names, env):
-                data[ename].append(e)
-            for oname, o in zip(self.output_names, out):
-                data[oname].append(o)
+            for env_name, e in zip(self.input_names, env):
+                data[env_name].append(e)
+            for out_name, o in zip(self.output_names, out):
+                data[out_name].append(o)
             data[PayoffMatrix.LABEL].append(f)
 
         all_data = pd.DataFrame(data=data)
