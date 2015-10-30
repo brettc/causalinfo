@@ -34,15 +34,17 @@ class MeasureCause(object):
         p_flow(x_S, x_A, x_B) :=
             p(x_S) p(x_A | do(x_S)) p(x_B | do(x_S), do(x_A))
 
-        ... then we can simple measure conditional mutual information:
+        ... then we can simply measure conditional mutual information:
 
         I(X_A -> X_B | do(X_S)) = I_{pflow}(X_B : X_A | X_S)
 
-        This also makes it clear that information flow can be thought of as
-        calculated using the information gathered from a consecutive series of
+        This also makes it clear that information flow measure can be thought
+        of as the information gathered from a consecutive series of
         intervention experiments.
         """
+
         if s_var is None:
+            # No conditioning? Just use the simpler version...
             return self._causal_flow_null(a_var, b_var)
 
         # 1. First, we simply observe the 'imposed' variable S as it occurs.
@@ -64,7 +66,10 @@ class MeasureCause(object):
         return j_do_a_s.mutual_info(a_var, b_var, s_var)
 
     def _causal_flow_null(self, a_var, b_var):
-        """Simple un-conditional version of above"""
+        """Simple un-conditional version of above
+        
+        It takes one less step.
+        """
 
         # 1. Observe a
         j_observe = self.graph.generate_joint(self.root_dist)
@@ -72,6 +77,9 @@ class MeasureCause(object):
 
         # 2. Use observed distribution of a, but now 'do' it.
         j_do_a = self.graph.generate_joint(self.root_dist, do_dist=see_a)
+
+        # 3. Now we simply calculate the conditional mutual information over
+        #    this final distribution.
         return j_do_a.mutual_info(a_var, b_var)
 
     def average_sad(self, a_var, b_var):

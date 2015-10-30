@@ -30,7 +30,7 @@ class Equation(object):
                      dtype=float) for o in outputs]
 
         # Create a lookup table based on the strategy function. Then we can
-        # discard the function.
+        # discard the function (very useful if we're interested in pickling).
         self.lookup = {}
 
         for i, states in enumerate(input_states):

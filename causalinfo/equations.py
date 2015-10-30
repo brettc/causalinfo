@@ -42,6 +42,11 @@ def f_and(i1, i2, o):
     else:
         o[0] = 1.0
 
+def f_anotb(i1, i2, o):
+    if i1 and not i2:
+        o[1] = 1.0
+    else:
+        o[0] = 1.0
 
 def f_or(i1, i2, o):
     if i1 or i2:
