@@ -96,6 +96,9 @@ def test1():
     c1, c2 = make_variables('C1 C2', 2)
 
     p = PayoffMatrix([c1, c2], [a], m1)
+    f = p.to_frame()
+    print f
+    print f.ix[(1, 1)].ix[1]
     # net = CausalGraph([eq1, eq2])
     # print p.fitness_lookup
     # print p.fitness_from_assignments({c1: 1, c2: 1, a: 1})
