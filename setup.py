@@ -32,7 +32,6 @@ CLASSIFIERS = [
 INSTALL_REQUIRES = [
     "pathlib",
     "pandas",
-    "numpy",
     "networkx"
 ]
 
