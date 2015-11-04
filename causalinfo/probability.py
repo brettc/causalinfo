@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-
 from util import cartesian
 
 
@@ -176,6 +175,17 @@ class Distribution(object):
         # standard information calculation (base 2).
         q = df.values.ravel()
         return -(q * np.log2(q)).sum()
+
+    def query_probability(self, query_string):
+        """Provide a simple way to calculate the probability of some
+        combination of states in the distribution.
+        """
+
+        # We need to reset the index to be able to use the query function.
+        result = self.probabilities.reset_index().query(query_string)
+
+        # Sum the probababilities
+        return result[self.P_LABEL].sum()
 
     def _repr_html_(self):
         # noinspection PyProtectedMember
