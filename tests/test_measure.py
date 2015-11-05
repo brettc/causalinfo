@@ -91,6 +91,11 @@ def test_signal_of_for():
 
     assert m.causal_flow(k, a) == 0
     assert m.average_sad(k, a) == 0
+    assert_allclose(m.average_sad(s, a), m.mutual_info(s, a))
+
+    assert m.mutual_info(k, a) == m.mutual_info(s, a)
+    assert m.mutual_info(k, a, s) == 0
+    assert m.mutual_info(s, a, k) == 0
 
 
 def xxtest_half_signal():
