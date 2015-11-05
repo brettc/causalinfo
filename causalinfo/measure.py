@@ -1,6 +1,7 @@
 import pandas as pd
+
 from causalinfo.payoff import PayoffMatrix
-from network import CausalGraph
+from graph import CausalGraph
 from probability import JointDistByState, Distribution, expand_variables
 
 

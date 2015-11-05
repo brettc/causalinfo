@@ -1,10 +1,10 @@
-from numpy.testing import assert_allclose
 from numpy import log2
+from numpy.testing import assert_allclose
 
-from causalinfo.probability import (make_variables, UniformDist, JointDist)
-from causalinfo.network import Equation, CausalGraph
-from causalinfo.measure import MeasureCause
 from causalinfo import equations
+from causalinfo.graph import Equation, CausalGraph
+from causalinfo.measure import MeasureCause
+from causalinfo.probability import (make_variables, UniformDist, JointDist)
 
 
 def test_controlled_diamond():
