@@ -1,3 +1,7 @@
+import equations
+from .graph import CausalGraph, Equation
+from .measure import MeasureCause, MeasureSuccess
+from .payoff import PayoffMatrix
 from .probability import (
     vs,
     Variable,
@@ -6,14 +10,6 @@ from .probability import (
     JointDist,
     JointDistByState
 )
-
-from .network import CausalGraph, Equation
-
-from .measure import MeasureCause, MeasureSuccess
-
-from .payoff import PayoffMatrix
-
-import equations
 
 __version__ = "1.0.0"
 

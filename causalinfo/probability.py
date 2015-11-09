@@ -1,5 +1,6 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
+
 from util import cartesian
 
 
@@ -184,12 +185,16 @@ class Distribution(object):
         # We need to reset the index to be able to use the query function.
         result = self.probabilities.reset_index().query(query_string)
 
-        # Sum the probababilities
+        # Sum the probabilities
         return result[self.P_LABEL].sum()
+
+    def to_frame(self):
+        """Return a Dataframe (this is just probabilities for now!)"""
+        return self.probabilities
 
     def _repr_html_(self):
         # noinspection PyProtectedMember
-        return self.probabilities._repr_html_()
+        return self.to_frame()._repr_html_()
 
 
 class JointDist(Distribution):

@@ -1,10 +1,10 @@
-from numpy.testing import assert_allclose
 from numpy import log2
+from numpy.testing import assert_allclose
 
-from causalinfo.probability import (make_variables, UniformDist, JointDist)
-from causalinfo.network import Equation, CausalGraph
-from causalinfo.measure import MeasureCause
 from causalinfo import equations
+from causalinfo.graph import Equation, CausalGraph
+from causalinfo.measure import MeasureCause
+from causalinfo.probability import (make_variables, UniformDist, JointDist)
 
 
 def test_controlled_diamond():
@@ -91,6 +91,11 @@ def test_signal_of_for():
 
     assert m.causal_flow(k, a) == 0
     assert m.average_sad(k, a) == 0
+    assert_allclose(m.average_sad(s, a), m.mutual_info(s, a))
+
+    assert m.mutual_info(k, a) == m.mutual_info(s, a)
+    assert m.mutual_info(k, a, s) == 0
+    assert m.mutual_info(s, a, k) == 0
 
 
 def xxtest_half_signal():
@@ -238,15 +243,25 @@ def xxtest_diamond():
 
 
 def test_signal_success():
-    def payoffs(C, A):
-        if C == A:
-            return 1
-        return 0
-
+    # def payoffs(C, A):
+    #     if C == A:
+    #         return 1
+    #     return 0
+    #
     c, s, a = make_variables('C S A', 2)
     eq1 = Equation('Send', [c], [s], equations.f_same)
     eq2 = Equation('Recv', [s], [a], equations.f_same)
-    network = CausalGraph([eq1, eq2])
-    root_dist = JointDist({c: [.7, .3]})
+    gr = CausalGraph([eq1, eq2])
+    root_dist = JointDist({c: [.9, .1]})
 
-    # m = MeasureSuccess(network, root_dist, PayoffMatrix([c], [a], payoffs))
+    # m = MeasureCause(gr, root_dist)
+    d = gr.generate_joint(root_dist)
+    print d.to_frame()
+    for x, y in d.iter_conditional(c, s):
+        print x, y
+
+    import numpy as np
+    print np.log2(d.probabilities.values)
+    # print m.mutual_info(s, c)
+
+    # m = MeasureSuccess(gr, root_dist, PayoffMatrix([c], [a], payoffs))

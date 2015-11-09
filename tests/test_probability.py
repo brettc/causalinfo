@@ -1,9 +1,9 @@
 from pandas.util.testing import assert_frame_equal
 
+from causalinfo import equations
+from causalinfo.graph import Equation, CausalGraph
 from causalinfo.probability import (Variable, make_variables, UniformDist,
                                     expand_variables, JointDistByState)
-from causalinfo.network import Equation, CausalGraph
-from causalinfo import equations
 
 
 def test_variable_creation():
