@@ -185,7 +185,7 @@ class Distribution(object):
         # We need to reset the index to be able to use the query function.
         result = self.probabilities.reset_index().query(query_string)
 
-        # Sum the probababilities
+        # Sum the probabilities
         return result[self.P_LABEL].sum()
 
     def to_frame(self):

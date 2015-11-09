@@ -243,15 +243,25 @@ def xxtest_diamond():
 
 
 def test_signal_success():
-    def payoffs(C, A):
-        if C == A:
-            return 1
-        return 0
-
+    # def payoffs(C, A):
+    #     if C == A:
+    #         return 1
+    #     return 0
+    #
     c, s, a = make_variables('C S A', 2)
     eq1 = Equation('Send', [c], [s], equations.f_same)
     eq2 = Equation('Recv', [s], [a], equations.f_same)
-    network = CausalGraph([eq1, eq2])
-    root_dist = JointDist({c: [.7, .3]})
+    gr = CausalGraph([eq1, eq2])
+    root_dist = JointDist({c: [.9, .1]})
 
-    # m = MeasureSuccess(network, root_dist, PayoffMatrix([c], [a], payoffs))
+    # m = MeasureCause(gr, root_dist)
+    d = gr.generate_joint(root_dist)
+    print d.to_frame()
+    for x, y in d.iter_conditional(c, s):
+        print x, y
+
+    import numpy as np
+    print np.log2(d.probabilities.values)
+    # print m.mutual_info(s, c)
+
+    # m = MeasureSuccess(gr, root_dist, PayoffMatrix([c], [a], payoffs))
