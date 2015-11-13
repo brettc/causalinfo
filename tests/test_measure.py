@@ -12,10 +12,10 @@ def test_controlled_diamond():
     """
     c1, c2, s1, s2, s3, s4, a1 = make_variables('c1 c2 s1 s2 s3 s4 a1', 2)
 
-    eq1 = Equation('SAME', [c1], [s1], equations.f_same)
-    eq2 = Equation('SAMEB', [c2], [s2, s3], equations.f_branch_same)
-    eq3 = Equation('AND', [s1, s2], [s4], equations.f_and)
-    eq4 = Equation('OR', [s3, s4], [a1], equations.f_or)
+    eq1 = Equation('SAME', [c1], [s1], equations.same_)
+    eq2 = Equation('SAMEB', [c2], [s2, s3], equations.branch_same_)
+    eq3 = Equation('AND', [s1, s2], [s4], equations.and_)
+    eq4 = Equation('OR', [s3, s4], [a1], equations.or_)
     net = CausalGraph([eq1, eq2, eq3, eq4])
 
     # Let's just use Uniform
@@ -33,8 +33,8 @@ def test_ay_polani():
     wdist = UniformDist(w)
 
     # Ay & Polani, Example 3
-    eq1 = Equation('BR', [w], [x, y], equations.f_branch_same)
-    eq2 = Equation('XOR', [x, y], [z], equations.f_xor)
+    eq1 = Equation('BR', [w], [x, y], equations.branch_same_)
+    eq2 = Equation('XOR', [x, y], [z], equations.xor_)
 
     # Build the graph
     eg3 = CausalGraph([eq1, eq2])
@@ -50,10 +50,10 @@ def test_ay_polani():
     assert m_eg3.causal_flow(w, z, y) == 1
 
     # Ay & Polani, Example 5.1
-    def f_copy_first(i1, i2, o1):
+    def copy_first_(i1, i2, o1):
         o1[i1] = 1.0
 
-    eq2 = Equation('COPYX', [x, y], [z], f_copy_first)
+    eq2 = Equation('COPYX', [x, y], [z], copy_first_)
     eg51 = CausalGraph([eq1, eq2])
     m_eg51 = MeasureCause(eg51, wdist)
 
@@ -63,13 +63,13 @@ def test_ay_polani():
     assert m_eg51.causal_flow(x, z) == 1
 
     # Ay & Polani, Example 5.2
-    def f_random_sometimes(i1, i2, o1):
+    def random_sometimes_(i1, i2, o1):
         if i1 != i2:
             o1[:] = .5
         else:
-            equations.f_xor(i1, i2, o1)
+            equations.xor_(i1, i2, o1)
 
-    eq2 = Equation('RAND', [x, y], [z], f_random_sometimes)
+    eq2 = Equation('RAND', [x, y], [z], random_sometimes_)
     eg52 = CausalGraph([eq1, eq2])
     m_eg52 = MeasureCause(eg52, wdist)
 
@@ -78,10 +78,10 @@ def test_ay_polani():
     assert_allclose(m_eg52.causal_flow(x, z, y), expected)
 
 
-def test_signal_of_for():
+def test_correlation():
     c, s, a, k = make_variables('C S A K', 2)
-    eq1 = Equation('Send', [c], [s, k], equations.f_branch_same)
-    eq2 = Equation('Recv', [s], [a], equations.f_same)
+    eq1 = Equation('Send', [c], [s, k], equations.branch_same_)
+    eq2 = Equation('Recv', [s], [a], equations.same_)
     network = CausalGraph([eq1, eq2])
     root_dist = JointDist({c: [.7, .3]})
     m = MeasureCause(network, root_dist)
@@ -108,8 +108,8 @@ def xxtest_half_signal():
 
     print 'signaling 2'
     c1, c2, s1, s2, s3, a = make_variables('C1 C2 S1 S2 S3 A', 2)
-    eq1 = Equation('Send1', [c1], [s1], equations.f_same)
-    eq2 = Equation('Send2', [c2], [s2], equations.f_same)
+    eq1 = Equation('Send1', [c1], [s1], equations.same_)
+    eq2 = Equation('Send2', [c2], [s2], equations.same_)
     eq3 = Equation('Rec1', [s1, s2], [a], merge)
     network = CausalGraph([eq1, eq2, eq3])
     root_dist = UniformDist(c1, c2)
@@ -121,7 +121,7 @@ def xxtest_half_signal():
 
 def test_signal3():
 
-    def merge(i1, i2, o1):
+    def merge_(i1, i2, o1):
         if i2:
             # Perfect spec
             o1[i1] = 1.0
@@ -130,9 +130,9 @@ def test_signal3():
 
     c1, s1, s3, a = make_variables('C1 S1 S3 A', 4)
     c2, s2 = make_variables('C2 S2', 2)
-    eq1 = Equation('Send1', [c1], [s1], equations.f_same)
-    eq2 = Equation('Send2', [c2], [s2], equations.f_same)
-    eq3 = Equation('Rec1', [s1, s2], [a], merge)
+    eq1 = Equation('Send1', [c1], [s1], equations.same_)
+    eq2 = Equation('Send2', [c2], [s2], equations.same_)
+    eq3 = Equation('Rec1', [s1, s2], [a], merge_)
     network = CausalGraph([eq1, eq2, eq3])
     root_dist = JointDist({c1: [.25] * 4, c2: [.5, .5]})
     m = MeasureCause(network, root_dist)
@@ -144,13 +144,10 @@ def test_signal3():
     assert_allclose(m.causal_flow(s1, a, s2), m.average_sad(s1, a))
     assert_allclose(m.causal_flow(s2, a, s1), m.average_sad(s2, a))
 
-    print m.average_sad(s1, a), m.mutual_info(s1, a)
-    print m.average_sad(s2, a), m.mutual_info(s2, a)
-
 
 def test_random_spec():
 
-    def add_noise(i1, i2, o1):
+    def add_noise_(i1, i2, o1):
         if i2:
             # Random Coin toss
             o1[:] = .5
@@ -159,8 +156,8 @@ def test_random_spec():
             o1[i1] = 1.0
 
     c1, c2, s1, a = make_variables('C1 C2 S1 A', 2)
-    eq1 = Equation('Send1', [c1, c2], [s1], add_noise)
-    eq2 = Equation('Send2', [s1], [a], equations.f_same)
+    eq1 = Equation('Send1', [c1, c2], [s1], add_noise_)
+    eq2 = Equation('Send2', [s1], [a], equations.same_)
     network = CausalGraph([eq1, eq2])
     root_dist = JointDist({c1: [.2, .8], c2: [.5, .5]})
     m = MeasureCause(network, root_dist)
@@ -194,10 +191,10 @@ def xxxtest_signal4():
     print 'signaling 4'
     c1, s1, s3, a = make_variables('C1 S1 S3 A', 4)
     c2, s2, c3, s4 = make_variables('C2 S2 C3 S4', 2)
-    eq1 = Equation('Send1', [c1], [s1], equations.f_same)
-    eq2 = Equation('Send2', [c2], [s2], equations.f_same)
+    eq1 = Equation('Send1', [c1], [s1], equations.same_)
+    eq2 = Equation('Send2', [c2], [s2], equations.same_)
     eq3 = Equation('Rec1', [s2, s1], [s4], merge1)
-    eq4 = Equation('Rec2', [c3], [s3], equations.f_same)
+    eq4 = Equation('Rec2', [c3], [s3], equations.same_)
     eq5 = Equation('Rec3', [s3, s4], [a], merge2)
     network = CausalGraph([eq1, eq2, eq3, eq4, eq5])
     root_dist = JointDist({c1: [.25] * 4, c2: [.2, .8], c3: [.5, .5]})
@@ -230,10 +227,10 @@ def xxtest_diamond():
             o1[i1/2] = 1.0
 
     c, s1, s2, s3, s4, a = make_variables('C S1 S2 S3 S4 A', 2)
-    eq1 = Equation('Send', [c], [s1, s2], equations.f_branch_same)
-    eq2 = Equation('Relay1', [s1], [s3], equations.f_same)
-    eq3 = Equation('Relay2', [s2], [s4], equations.f_same)
-    eq4 = Equation('XOR', [s3, s4], [a], equations.f_xor)
+    eq1 = Equation('Send', [c], [s1, s2], equations.branch_same_)
+    eq2 = Equation('Relay1', [s1], [s3], equations.same_)
+    eq3 = Equation('Relay2', [s2], [s4], equations.same_)
+    eq4 = Equation('XOR', [s3, s4], [a], equations.xor_)
     n = CausalGraph([eq1, eq2, eq3, eq4])
     root_dist = JointDist({c: [.5, .5]})
     m = MeasureCause(n, root_dist)
@@ -241,27 +238,3 @@ def xxtest_diamond():
     print m.causal_flow(s3, a, s4)
     print m.average_sad(s3, a)
 
-
-def test_signal_success():
-    # def payoffs(C, A):
-    #     if C == A:
-    #         return 1
-    #     return 0
-    #
-    c, s, a = make_variables('C S A', 2)
-    eq1 = Equation('Send', [c], [s], equations.f_same)
-    eq2 = Equation('Recv', [s], [a], equations.f_same)
-    gr = CausalGraph([eq1, eq2])
-    root_dist = JointDist({c: [.9, .1]})
-
-    # m = MeasureCause(gr, root_dist)
-    d = gr.generate_joint(root_dist)
-    print d.to_frame()
-    for x, y in d.iter_conditional(c, s):
-        print x, y
-
-    import numpy as np
-    print np.log2(d.probabilities.values)
-    # print m.mutual_info(s, c)
-
-    # m = MeasureSuccess(gr, root_dist, PayoffMatrix([c], [a], payoffs))

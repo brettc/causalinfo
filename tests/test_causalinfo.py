@@ -37,5 +37,5 @@ def test_variable_init():
 
 def test_equation_init():
     a, b, c = make_variables('a b c', 2)
-    e1 = Equation('xor', [a, b], [c], equations.f_xor)
+    e1 = Equation('xor', [a, b], [c], equations.xor_)
     print e1.to_frame()

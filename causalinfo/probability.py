@@ -12,7 +12,7 @@ class Namespace(object):
         setattr(self, name, obj)
 
 
-vs = Namespace()
+NS = Namespace()
 
 
 class Variable(object):
@@ -23,6 +23,7 @@ class Variable(object):
         """Name the variable, and say how many states it has. Variables start
         off as unassigned.
         """
+        global NS
         assert isinstance(name, str)
         assert name.isalnum()
 
@@ -32,7 +33,7 @@ class Variable(object):
         # Generate the actual states; this makes it easy to work with.
         self.states = range(n_states)
 
-        vs.add(name, self)
+        NS.add(name, self)
 
     def uniform(self):
         """Return a uniform distribution for this variable."""
