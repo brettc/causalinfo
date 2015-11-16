@@ -1,14 +1,16 @@
 import numpy as np
 import pandas as pd
-
 from util import cartesian
 
 
 class Namespace(object):
+    """Holds all Variables that are defined
+    """
+
     def __init__(self):
         pass
 
-    def add(self, name, obj):
+    def _add(self, name, obj):
         setattr(self, name, obj)
 
 
@@ -33,7 +35,7 @@ class Variable(object):
         # Generate the actual states; this makes it easy to work with.
         self.states = range(n_states)
 
-        NS.add(name, self)
+        NS._add(name, self)
 
     def uniform(self):
         """Return a uniform distribution for this variable."""
@@ -58,7 +60,11 @@ class Variable(object):
 
 
 def expand_variables(vs):
-    """Make sure we have a list of Variables"""
+    """Make sure we have a list of Variables
+
+    This will return a flattened list of variables, no matter what you send
+    into it.
+    """
     try:
         # This won't work if it ain't iterable
         vsi = iter(vs)
@@ -74,8 +80,8 @@ def expand_variables(vs):
 
 def make_variables(strings, n_states):
     """Just a shortcut for making lots of variables"""
-    varnames = strings.split()
-    return [Variable(v, n_states) for v in varnames]
+    var_names = strings.split()
+    return [Variable(v, n_states) for v in var_names]
 
 
 class Distribution(object):
