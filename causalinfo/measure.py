@@ -2,7 +2,8 @@ import pandas as pd
 
 from causalinfo.payoff import PayoffMatrix
 from graph import CausalGraph
-from probability import JointDistByState, Distribution, expand_variables
+from probability import JointDistByState, Distribution, expand_variables, \
+    Variable
 
 
 class MeasureCause(object):
@@ -43,6 +44,8 @@ class MeasureCause(object):
         of as the information gathered from a consecutive series of
         intervention experiments.
         """
+        assert isinstance(a_var, Variable)
+        assert isinstance(b_var, Variable)
 
         if s_var is None:
             # No conditioning? Just use the simpler version...
@@ -68,7 +71,7 @@ class MeasureCause(object):
 
     def _causal_flow_null(self, a_var, b_var):
         """Simple un-conditional version of above
-        
+
         It takes one less step.
         """
 

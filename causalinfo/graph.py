@@ -8,9 +8,18 @@ from probability import Variable, ProbabilityTree, JointDist, TreeDistribution
 
 
 class Equation(object):
-    """A Equation maps 1+ input variables to 1+ output variables"""
+    """Maps input variable(s) to output variable(s)"""
 
     def __init__(self, name, inputs, outputs, strategy_func):
+        """Use the strategy_func to map inputs to outputs.
+
+        Args:
+            name (str): Identifying name of equation.
+            inputs (List[Variable]): Variables to map from.
+            outputs (List[Variable]): Variables to map to.
+            strategy_func (function): Mapping function.
+
+        """
         assert str(name) == name
         assert not [i for i in inputs if not isinstance(i, Variable)]
         assert not [o for o in outputs if not isinstance(o, Variable)]

@@ -3,7 +3,7 @@ from .graph import CausalGraph, Equation
 from .measure import MeasureCause, MeasureSuccess
 from .payoff import PayoffMatrix
 from .probability import (
-    vs,
+    NS,
     Variable,
     make_variables,
     UniformDist,
@@ -26,7 +26,7 @@ __copyright__ = "Copyright (c) 2015 Brett Calcott"
 __all__ = [
     "CausalGraph",
     "Equation",
-    "vs",
+    "NS",
     "Variable",
     "make_variables",
     "UniformDist",
