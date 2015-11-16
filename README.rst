@@ -1,14 +1,19 @@
-========================================
-causalinfo: Information on Causal Graphs 
-========================================
+============================================
+``causalinfo``: Information on Causal Graphs 
+============================================
+
+.. image:: https://badge.fury.io/py/causalinfo.png
+    :target: http://badge.fury.io/py/causalinfo
 
 `causalinfo` is a Python library to aid in experimenting with different
-*information measures on causal graphs*---a combination of classic information
+*information measures on causal graphs*---a combination of information
 theory with recent work on causal graphs [Pearl2000]_. These information
 measures can used to ascertain the degree to which one variable controls or
 explains other variables in the graph. The use of these measures has important
 connections to work on causal explanation in philosophy of science, and to
 understanding information processing in biological networks. 
+
+The library is a work in progress, and will be extended as research continues.
 
 What does it do?
 ----------------
@@ -16,32 +21,48 @@ What does it do?
 `causalinfo` has been written primarily for interactive use within `IPython
 Notebook`_. You can create variables and assign probability distributions to
 them, or relate them to other variables using conditional probabilities.
-Several related variables can be combined into a directed acyclic graph, and
-the can generate the joint distribution for all variables under observation,
-or under controlled interventions on certain variables. You can also calculate
-various information measures on the graph whilst controlling these variables,
-including correlative measures, such as Mutual Information, but also causal
-measures, such as Information Flow [AyPolani2008]_, and Causal Specificity
-[GriffithsEtAl2015]_.
+Several related variables can be combined into a directed acyclic graph, which
+can generate a joint distribution for all variables under observation, or
+under controlled interventions on certain variables. You can also calculate
+various information measures between variables in the graph whilst controlling
+other variables. These include correlative measures, such as Mutual
+Information, but also causal measures, such as Information Flow
+[AyPolani2008]_, and Causal Specificity [GriffithsEtAl2015]_.
 
 For some examples of how to use the library, please see the IPython Notebooks
 that are included:
 
-* Introduction_. Bla bla bla bla bla.
+* Introduction_. A short introduction to some of the things you can do with
+  the library.
 
-* Rain_. Bla bla bla.
+* Rain_. Performing some interventions on a causal graph from Pearl's book.
 
-* `Multiple Paths`_. Bla bla bla.
+.. TODO: Add the signaling stuff in.
+.. * Signaling_. Looking at the measures of multiple pathways.
 
+.. _Introduction: https://github.com/brettc/causalinfo/blob/master/notebooks/introduction.ipynb
+
+.. _Rain: https://github.com/brettc/causalinfo/blob/master/notebooks/rain.ipynb
+
+.. Signaling: https://github.com/brettc/causalinfo/blob/master/notebooks/signaling.ipynb -->
+
+
+.. TODO: Add a getting started guide
+.. Getting Started
+    ---------------
+    .. code:: bash 
+    pip install causalinfo
+    curl https://raw.githubusercontent.com/brettc/causalinfo/master/notebooks/introduction.ipynb 
 
 Some Caveats
 ------------
 
 The library is not meant for large scale analysis. The code has been written
-to offload many tasks on to other libraries (such as Pandas_ and Networkx_),
-and to work well in `IPython Notebook`_, thus it is not optimized for speed.
-Calculating the joint distribution for a causal graph with many variables can
-become very *slow* (especially if the variables have many states). 
+to offload as much as possible on to other libraries (such as Pandas_ and
+Networkx_), and to allow easy inspection of what is going on within `IPython
+Notebook`_, thus it is not optimized for speed. Calculating the joint
+distribution for a causal graph with many variables can become very *slow*
+(especially if the variables have many states). 
 
 
 Authorship
@@ -59,16 +80,15 @@ was made possible through the support of a grant from the Templeton World
 Charity Foundation. The opinions expressed are those of the author and do not
 necessarily reflect the views of the Templeton World Charity Foundation. 
 
-.. Links to Notebooks-------------
+License
+-------
 
-.. _`Introduction`: https://github.com/brettc/causalinfo/blob/master/notebooks/arnaud.ipynb
-
-.. _`Rain`: https://github.com/brettc/causalinfo/blob/master/notebooks/arnaud.ipynb
-
-.. _`Multiple Paths`: https://github.com/brettc/causalinfo/blob/master/notebooks/arnaud.ipynb
+MIT licensed. See the bundled LICENSE_ file for more details.
 
 
 .. Miscellaneous Links------------
+
+.. _LICENSE: https://github.com/brettc/causalinfo/blob/master/LICENSE
 
 .. _`Brett Calcott`: http://brettcalcott.com
 
@@ -82,7 +102,9 @@ necessarily reflect the views of the Templeton World Charity Foundation.
 
 .. _`Causal Foundations of Biological Information`: http://sydney.edu.au/foundations_of_science/research/causal_foundations_biological_information.shtml 
 
-.. References-------------------
+
+References
+----------
 
 .. [AyPolani2008] Ay, N., & Polani, D. (2008). Information flows in causal
     networks. Advances in Complex Systems, 11(01), 17–41.
