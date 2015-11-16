@@ -118,10 +118,17 @@ class CausalGraph(object):
     """A Causal graph built using a set of equations relating variables"""
 
     def __init__(self, equations):
-        assert not [not_p for not_p in equations
-                    if not isinstance(not_p, Equation)]
-
+        # Everythings must be an equation
         self.equations = equations
+        self.equations_by_name = {}
+
+        for eq in equations:
+            if not isinstance(eq, Equation):
+                raise RuntimeError("Non Equation found.")
+
+            if eq.name in equations:
+                raise RuntimeError("Equations names must be unique within a graph")
+            self.equations_by_name[eq.name] = eq
 
         # Make a network from this. The first is the full network of both
         # equations and variables (a bipartite graph). The second is just the
@@ -164,6 +171,9 @@ class CausalGraph(object):
 
         self.graphviz_prettify(self.full_network)
         # self.graphviz_prettify(self.causal_network)
+        
+    def get_equation(self, name):
+        return self.equations_by_name(name)
 
     def graphviz_prettify(self, network):
         """This just makes things pretty for graphviz output."""
