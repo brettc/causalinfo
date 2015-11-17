@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from util import cartesian
+from .util import cartesian
 
 
 class Namespace(object):
@@ -282,7 +282,7 @@ class ProbabilityTree(object):
         # TODO: Sort the assignments into something nicer with labels,
         # ordered.
         for b in self.all_branches():
-            print ' ' * b.depth, b.probability, b.assignments
+            print(' ' * b.depth, b.probability, b.assignments)
 
 
 class ProbabilityBranch(object):

@@ -1,8 +1,8 @@
 import pandas as pd
 
-from causalinfo.payoff import PayoffMatrix
-from graph import CausalGraph
-from probability import JointDistByState, Distribution, expand_variables, \
+from .payoff import PayoffMatrix
+from .graph import CausalGraph
+from .probability import JointDistByState, Distribution, expand_variables, \
     Variable
 
 

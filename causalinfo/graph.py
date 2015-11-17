@@ -4,7 +4,8 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
-from probability import Variable, ProbabilityTree, JointDist, TreeDistribution
+from .probability import (
+    Variable, ProbabilityTree, JointDist, TreeDistribution)
 
 
 class Equation(object):

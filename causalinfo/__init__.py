@@ -1,4 +1,4 @@
-import equations
+from . import equations
 from .graph import CausalGraph, Equation
 from .measure import MeasureCause, MeasureSuccess
 from .payoff import PayoffMatrix
