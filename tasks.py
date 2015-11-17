@@ -71,6 +71,9 @@ def notebook():
     os.chdir(os.path.join(here, 'notebooks'))
     old_argv = sys.argv[:]
 
+    # Taken from here:
+    # http://stackoverflow.com/questions/
+    # 26338688/start-ipython-notebook-with-python-file
     try:
         warnings.filterwarnings("ignore", module = "zmq.*")
         sys.argv = ['ipython', 'notebook']
@@ -80,6 +83,7 @@ def notebook():
         print('Invoking "' + ' '.join(sys.argv) + '"')
         launch_new_instance()
     finally:
+        # Not sure this is strictly necessary...
         sys.argv = old_argv
         os.chdir(here)
         print('Removing development package...')
