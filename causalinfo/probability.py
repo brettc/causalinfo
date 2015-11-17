@@ -1,18 +1,20 @@
-import pandas as pd
 import numpy as np
-
+import pandas as pd
 from util import cartesian
 
 
 class Namespace(object):
+    """Holds all Variables that are defined
+    """
+
     def __init__(self):
         pass
 
-    def add(self, name, obj):
+    def _add(self, name, obj):
         setattr(self, name, obj)
 
 
-vs = Namespace()
+NS = Namespace()
 
 
 class Variable(object):
@@ -23,6 +25,7 @@ class Variable(object):
         """Name the variable, and say how many states it has. Variables start
         off as unassigned.
         """
+        global NS
         assert isinstance(name, str)
         assert name.isalnum()
 
@@ -32,7 +35,7 @@ class Variable(object):
         # Generate the actual states; this makes it easy to work with.
         self.states = range(n_states)
 
-        vs.add(name, self)
+        NS._add(name, self)
 
     def uniform(self):
         """Return a uniform distribution for this variable."""
@@ -53,11 +56,15 @@ class Variable(object):
         return valid_dist
 
     def __repr__(self):
-        return '<{}>'.format(self.name)
+        return '({})'.format(self.name)
 
 
 def expand_variables(vs):
-    """Make sure we have a list of Variables"""
+    """Make sure we have a list of Variables
+
+    This will return a flattened list of variables, no matter what you send
+    into it.
+    """
     try:
         # This won't work if it ain't iterable
         vsi = iter(vs)
@@ -73,8 +80,8 @@ def expand_variables(vs):
 
 def make_variables(strings, n_states):
     """Just a shortcut for making lots of variables"""
-    varnames = strings.split()
-    return [Variable(v, n_states) for v in varnames]
+    var_names = strings.split()
+    return [Variable(v, n_states) for v in var_names]
 
 
 class Distribution(object):
@@ -177,9 +184,24 @@ class Distribution(object):
         q = df.values.ravel()
         return -(q * np.log2(q)).sum()
 
+    def query_probability(self, query_string):
+        """Provide a simple way to calculate the probability of some
+        combination of states in the distribution.
+        """
+
+        # We need to reset the index to be able to use the query function.
+        result = self.probabilities.reset_index().query(query_string)
+
+        # Sum the probabilities
+        return result[self.P_LABEL].sum()
+
+    def to_frame(self):
+        """Return a Dataframe (this is just probabilities for now!)"""
+        return self.probabilities
+
     def _repr_html_(self):
         # noinspection PyProtectedMember
-        return self.probabilities._repr_html_()
+        return self.to_frame()._repr_html_()
 
 
 class JointDist(Distribution):

@@ -1,9 +1,9 @@
 from pandas.util.testing import assert_frame_equal
 
+from causalinfo import equations
+from causalinfo.graph import Equation, CausalGraph
 from causalinfo.probability import (Variable, make_variables, UniformDist,
                                     expand_variables, JointDistByState)
-from causalinfo.network import Equation, CausalGraph
-from causalinfo import equations
 
 
 def test_variable_creation():
@@ -52,7 +52,7 @@ def test_uniform():
 
 def test_distribution():
     a, b, c = make_variables("A B C", 2)
-    eq1 = Equation('xor', [a, b], [c], equations.f_xor)
+    eq1 = Equation('xor', [a, b], [c], equations.xor_)
     net = CausalGraph([eq1])
     ab = UniformDist(a, b)
     j_obs = net.generate_joint(ab)

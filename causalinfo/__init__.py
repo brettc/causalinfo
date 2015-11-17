@@ -1,5 +1,9 @@
+import equations
+from .graph import CausalGraph, Equation
+from .measure import MeasureCause, MeasureSuccess
+from .payoff import PayoffMatrix
 from .probability import (
-    vs,
+    NS,
     Variable,
     make_variables,
     UniformDist,
@@ -7,19 +11,11 @@ from .probability import (
     JointDistByState
 )
 
-from .network import CausalGraph, Equation
-
-from .measure import MeasureCause, MeasureSuccess
-
-from .payoff import PayoffMatrix
-
-import equations
-
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 __title__ = "causalinfo"
 __description__ = "Information Measures on Causal Graphs."
-__uri__ = "http://github/brettc/causalinfo/"
+__uri__ = "https://github/brettc/causalinfo/"
 
 __author__ = "Brett Calcott"
 __email__ = "brett.calcott@gmail.com"
@@ -30,7 +26,7 @@ __copyright__ = "Copyright (c) 2015 Brett Calcott"
 __all__ = [
     "CausalGraph",
     "Equation",
-    "vs",
+    "NS",
     "Variable",
     "make_variables",
     "UniformDist",

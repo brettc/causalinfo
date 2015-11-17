@@ -13,43 +13,48 @@ NOTES
 """
 
 
-def f_same(i, o):
+def same_(i, o):
     o[i] = 1.0
 
 
-def f_rotate_right(i, o):
+def rotate_right_(i, o):
     ii = (i + 1) % len(o)
     o[ii] = 1.0
 
 
-def f_xnor(i1, i2, o):
+def xnor_(i1, i2, o):
     if i1 == i2:
         o[1] = 1.0
     else:
         o[0] = 1.0
 
 
-def f_xor(i1, i2, o):
+def xor_(i1, i2, o):
     if (i1 or i2) and not (i1 and i2):
         o[1] = 1.0
     else:
         o[0] = 1.0
 
 
-def f_and(i1, i2, o):
+def and_(i1, i2, o):
     if i1 and i2:
         o[1] = 1.0
     else:
         o[0] = 1.0
 
+def anotb_(i1, i2, o):
+    if i1 and not i2:
+        o[1] = 1.0
+    else:
+        o[0] = 1.0
 
-def f_or(i1, i2, o):
+def or_(i1, i2, o):
     if i1 or i2:
         o[1] = 1.0
     else:
         o[0] = 1.0
 
 
-def f_branch_same(i, o1, o2):
+def branch_same_(i, o1, o2):
     o1[i] = 1.0
     o2[i] = 1.0
