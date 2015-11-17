@@ -10,6 +10,9 @@ from probability import Variable, ProbabilityTree, JointDist, TreeDistribution
 class Equation(object):
     """Maps input variable(s) to output variable(s)"""
 
+    INPUT_LABEL = 'Input'
+    OUTPUT_LABEL = 'Output'
+
     def __init__(self, name, inputs, outputs, strategy_func):
         """Use the strategy_func to map inputs to outputs.
 
@@ -77,7 +80,7 @@ class Equation(object):
         return dict(zip(self.outputs, results))
 
     def __repr__(self):
-        return "Equation<{}>".format(self.name)
+        return "<{}>".format(self.name)
 
     def to_frame(self):
         """Output the mapping equation in a nice way
@@ -89,7 +92,7 @@ class Equation(object):
         """
         # Create a set of dictionaries/lists for each column
         data = dict([(i_var.name, []) for i_var in self.inputs])
-        data.update({'Output': [], 'State': [], self.name: []})
+        data.update({self.OUTPUT_LABEL: [], self.INPUT_LABEL: [], self.name: []})
 
         # A very ugly loop to produce all the probabilities in a nice way.
         # Note that this just reproduces what is already in `self.lookup`.
@@ -99,15 +102,15 @@ class Equation(object):
                 for o_state, o_p in enumerate(results[i_index]):
                     for i_var, s in zip(self.inputs, i_state):
                         data[i_var.name].append(s)
-                    data['Output'].append(o_var.name)
-                    data['State'].append(o_state)
+                    data[self.OUTPUT_LABEL].append(o_var.name)
+                    data[self.INPUT_LABEL].append(o_state)
                     data[self.name].append(o_p)
         all_data = pd.DataFrame(data=data)
 
         # The magnificent pivot table function does all the work
         return pd.pivot_table(data=all_data, values=[self.name],
                               index=[i_var.name for i_var in self.inputs],
-                              columns=['Output', 'State'])
+                              columns=[self.OUTPUT_LABEL, self.INPUT_LABEL])
 
     def _repr_html_(self):
         # noinspection PyProtectedMember
@@ -170,7 +173,7 @@ class CausalGraph(object):
         self.ordered_nodes = nx.topological_sort(self.full_network)
 
         self.graphviz_prettify(self.full_network)
-        # self.graphviz_prettify(self.causal_network)
+        self.graphviz_prettify(self.causal_network)
         
     def get_equation(self, name):
         return self.equations_by_name(name)
@@ -183,9 +186,10 @@ class CausalGraph(object):
         }
         network.graph.update(graph_settings)
 
-        for n in self.ordered_nodes:
-            network.node[n]['label'] = n.name
-            if isinstance(n, Equation):
+        for n in network.nodes_iter():
+            if isinstance(n, Variable):
+                network.node[n]['label'] = n.name
+            elif isinstance(n, Equation):
                 network.node[n]['shape'] = 'diamond'
 
     def generate_joint(self, root_dist, do_dist=None):
