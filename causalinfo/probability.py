@@ -56,7 +56,7 @@ class Variable(object):
         return valid_dist
 
     def __repr__(self):
-        return '<{}>'.format(self.name)
+        return '({})'.format(self.name)
 
 
 def expand_variables(vs):
