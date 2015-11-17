@@ -159,10 +159,6 @@ def xxtest_diamond():
     n = CausalGraph([eq1, eq2, eq3, eq4])
     root_dist = JointDist({c: [.5, .5]})
     m = MeasureCause(n, root_dist)
-    print m.mutual_info(s3, a)
-    print m.causal_flow(s3, a, s4)
-    print m.average_sad(s3, a)
-
 
 def xxxtest_signal4():
 

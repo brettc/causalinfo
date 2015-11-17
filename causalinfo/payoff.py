@@ -1,8 +1,8 @@
 import pandas as pd
 
-from probability import TreeDistribution
-from util import cartesian
-from probability import JointDistByState
+from .probability import TreeDistribution
+from .util import cartesian
+from .probability import JointDistByState
 
 
 class PayoffMatrix(object):
@@ -82,7 +82,7 @@ class PayoffMatrix(object):
 
 
 def test1():
-    from probability import make_variables
+    from .probability import make_variables
 
     def m1(A, C1, C2):
         if (C1 and C2) == A:
@@ -97,16 +97,12 @@ def test1():
 
     p = PayoffMatrix([c1, c2], [a], m1)
     f = p.to_frame()
-    print f
-    print f.ix[(1, 1)].ix[1]
     # net = CausalGraph([eq1, eq2])
     # print p.fitness_lookup
     # print p.fitness_from_assignments({c1: 1, c2: 1, a: 1})
     # print p.to_frame()
 
     t = JointDistByState({c1: 0, s: 0})
-
-    print t.probabilities
 
 
 if __name__ == '__main__':
