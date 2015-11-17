@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 from invoke import task, run
+import os
+import sys
 
 @task
 def test(cover=False):
@@ -54,3 +56,31 @@ def readme(browse=True):
     run('rst2html.py README.rst > README.html')
     if browse:
         run('open README.html')
+
+@task
+def notebook():
+    from IPython.terminal.ipapp import launch_new_instance
+    from socket import gethostname
+    import warnings
+
+    print('Installing in develop mode')
+    run('python setup.py develop', hide='out')
+
+    print('Changing to notebooks folder')
+    here = os.path.dirname(__file__)
+    os.chdir(os.path.join(here, 'notebooks'))
+    old_argv = sys.argv[:]
+
+    try:
+        warnings.filterwarnings("ignore", module = "zmq.*")
+        sys.argv = ['ipython', 'notebook']
+        sys.argv.append("--IPKernelApp.pylab='inline'")
+        sys.argv.append("--NotebookApp.ip=" + gethostname())
+        sys.argv.append("--NotebookApp.open_browser=True")
+        print('Invoking "' + ' '.join(sys.argv) + '"')
+        launch_new_instance()
+    finally:
+        sys.argv = old_argv
+        os.chdir(here)
+        print('Removing development package...')
+        run('python setup.py develop -u', hide='out')
