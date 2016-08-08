@@ -100,6 +100,10 @@ class Distribution(object):
         self.names = [v.name for v in self.variables]
         self.probabilities = pr
 
+    def __iter__(self):
+        for t in self.probabilities.itertuples():
+            yield t
+
     def joint(self, *variables):
         """Generate the (sub)joint distribution over included variables
 
@@ -180,9 +184,15 @@ class Distribution(object):
         ensures this).
         """
         # Extract the numpy array, and just treat it as flat. Then do the
-        # standard information calculation (base 2).
+        # standard information calculation (base 2). Deal with zeros by simply
+        # cleaning up after.
         q = df.values.ravel()
-        return -(q * np.log2(q)).sum()
+        log2 = -np.log2(q)
+
+        # If q had zeros, then we'll get nans
+        log2_clean = np.nan_to_num(log2)
+
+        return (q * log2_clean).sum()
 
     def query_probability(self, query_string):
         """Provide a simple way to calculate the probability of some

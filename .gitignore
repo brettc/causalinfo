@@ -4,3 +4,5 @@
 build
 causalinfo.egg-info
 notebooks/.ipynb_checkpoints
+
+.cache/v/cache/lastfailed
