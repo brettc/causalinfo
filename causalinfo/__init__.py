@@ -6,6 +6,7 @@ from .probability import (
     NS,
     Variable,
     make_variables,
+    Distribution,
     UniformDist,
     JointDist,
     JointDistByState
@@ -29,6 +30,7 @@ __all__ = [
     "NS",
     "Variable",
     "make_variables",
+    "Distribution",
     "UniformDist",
     "JointDist",
     "JointDistByState",

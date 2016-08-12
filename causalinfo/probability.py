@@ -100,6 +100,31 @@ class Distribution(object):
         self.names = [v.name for v in self.variables]
         self.probabilities = pr
 
+    @staticmethod
+    def generate_from_func(variables, func):
+        names = [v.name for v in variables]
+        recs = []
+        for vals in func():
+            assert len(vals) == len(variables) + 1
+            for var, val in zip(variables, vals[:-1]):
+                assert val in var.states
+            recs.append(vals)
+
+        cols = names + [Distribution.P_LABEL]
+        df = pd.DataFrame.from_records(recs, columns=cols)
+        # Sum in case there are duplicates
+        df = pd.pivot_table(
+            df, 
+            values=[Distribution.P_LABEL],
+            index=[v.name for v in variables],
+            aggfunc=np.sum,
+        )
+
+        # Normalize
+        v = df[Distribution.P_LABEL].values
+        v /= v.sum()
+        return Distribution(variables, df)
+
     def __iter__(self):
         for t in self.probabilities.itertuples():
             yield t
