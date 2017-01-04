@@ -104,7 +104,7 @@ class Distribution(object):
     def generate_from_func(variables, func):
         names = [v.name for v in variables]
         recs = []
-        for vals in func():
+        for vals in func:
             assert len(vals) == len(variables) + 1
             for var, val in zip(variables, vals[:-1]):
                 assert val in var.states
