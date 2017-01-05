@@ -29,22 +29,28 @@ other variables. These include correlative measures, such as Mutual
 Information, but also causal measures, such as Information Flow
 [AyPolani2008]_, and Causal Specificity [GriffithsEtAl2015]_.
 
-For some examples of how to use the library, please see the IPython Notebooks
+For some brief examples of how to use the library, please see the IPython Notebooks
 that are included:
 
 * Introduction_. A short introduction to some of the things you can do with
   the library.
 
-* Rain_. Performing some interventions on a causal graph from Pearl's book.
+* Rain_. Performing some interventions on a causal graph; an example from
+  Judea Pearl's book.
 
-.. TODO: Add the signaling stuff in.
-.. * Signaling_. Looking at the measures of multiple pathways.
+* Signaling_. Measuring Causation in Signaling Networks. Some examples from
+  [CalcottEtAl2016]_.
+
+* `Information Flow`_. Measuring the flow of information in Causal networks
+  from [AyPolani2008]_.
 
 .. _Introduction: https://github.com/brettc/causalinfo/blob/master/notebooks/introduction.ipynb
 
 .. _Rain: https://github.com/brettc/causalinfo/blob/master/notebooks/rain.ipynb
 
-.. Signaling: https://github.com/brettc/causalinfo/blob/master/notebooks/signaling.ipynb -->
+.. _Signaling: https://github.com/brettc/causalinfo/blob/master/notebooks/signaling.ipynb
+
+.. _`Information Flow`: https://github.com/brettc/causalinfo/blob/master/notebooks/ay_polani.ipynb
 
 
 .. TODO: Add a getting started guide
@@ -111,6 +117,9 @@ References
 
 .. [GriffithsEtAl2015] Griffiths, P. E., Pocheville, A., Calcott, B., Stotz, K., 
     Kim, H., & Knight, R. (2015). Measuring Causal Specificity. Philosophy of Science, 82(October), 529–555.
+
+.. [CalcottEtAl2016] Calcott, B., Griffiths, P. E., Pocheville, A.
+    (Forthcoming). Signals that Make a Difference. British Journal for Philosophy of Science.
 
 .. [Pearl2000] Pearl, J. (2000). Causality. Cambridge University Press. 
 
