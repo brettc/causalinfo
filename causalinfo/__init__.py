@@ -12,7 +12,7 @@ from .probability import (
     JointDistByState
 )
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 __title__ = "causalinfo"
 __description__ = "Information Measures on Causal Graphs."
