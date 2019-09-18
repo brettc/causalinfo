@@ -105,7 +105,7 @@ def test_signal3():
             # Perfect spec
             o1[i1] = 1.0
         else:
-            o1[i1/2] = 1.0
+            o1[i1//2] = 1.0
 
     c1, s1, s3, a = make_variables('C1 S1 S3 A', 4)
     c2, s2 = make_variables('C2 S2', 2)

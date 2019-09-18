@@ -127,6 +127,7 @@ class CausalGraph(object):
         self.equations_by_name = {}
 
         for eq in equations:
+            # print(eq, eq.name, isinstance(eq, Equation))
             if not isinstance(eq, Equation):
                 raise RuntimeError("Non Equation found.")
 
@@ -156,9 +157,10 @@ class CausalGraph(object):
         self.outputs = set()
         self.inner = set()
 
-        for n in self.causal_network.nodes():
-            preds = self.full_network.predecessors(n)
-            sucs = self.full_network.successors(n)
+        for n in self.causal_network.nodes:
+            preds = list(self.full_network.predecessors(n))
+            sucs = list(self.full_network.successors(n))
+            # print(n, preds, sucs)
             if not preds:
                 self.inputs.add(n)
             if not sucs:
@@ -170,12 +172,12 @@ class CausalGraph(object):
         # the probabilities across the nodes in the right order, so that the
         # inputs for each player are always calculated in time (by previous
         # equations).
-        self.ordered_variables = nx.topological_sort(self.causal_network)
-        self.ordered_nodes = nx.topological_sort(self.full_network)
+        self.ordered_variables = list(nx.topological_sort(self.causal_network))
+        self.ordered_nodes = list(nx.topological_sort(self.full_network))
 
         self.graphviz_prettify(self.full_network)
         self.graphviz_prettify(self.causal_network)
-        
+
     def get_equation(self, name):
         return self.equations_by_name(name)
 
@@ -187,7 +189,7 @@ class CausalGraph(object):
         }
         network.graph.update(graph_settings)
 
-        for n in network.nodes_iter():
+        for n in network.nodes():
             if isinstance(n, Variable):
                 network.node[n]['label'] = n.name
             elif isinstance(n, Equation):

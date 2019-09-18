@@ -42,11 +42,13 @@ def and_(i1, i2, o):
     else:
         o[0] = 1.0
 
+
 def anotb_(i1, i2, o):
     if i1 and not i2:
         o[1] = 1.0
     else:
         o[0] = 1.0
+
 
 def or_(i1, i2, o):
     if i1 or i2:

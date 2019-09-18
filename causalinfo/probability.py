@@ -3,7 +3,7 @@ import pandas as pd
 from .util import cartesian
 
 
-class Namespace(object):
+class Namespace:
     """Holds all Variables that are defined
     """
 
@@ -17,7 +17,7 @@ class Namespace(object):
 NS = Namespace()
 
 
-class Variable(object):
+class Variable:
     """A discrete variable, with a distribution over N states.
     """
 
@@ -56,7 +56,7 @@ class Variable(object):
         return valid_dist
 
     def __repr__(self):
-        return '({})'.format(self.name)
+        return "({})".format(self.name)
 
 
 def expand_variables(vs):
@@ -84,10 +84,11 @@ def make_variables(strings, n_states):
     return [Variable(v, n_states) for v in var_names]
 
 
-class Distribution(object):
+class Distribution:
     """Base class for a distribution over one or more variables
     """
-    P_LABEL = 'Pr'
+
+    P_LABEL = "Pr"
 
     def __init__(self, variables, pr=None):
         # Everything should be a variable
@@ -114,15 +115,16 @@ class Distribution(object):
         df = pd.DataFrame.from_records(recs, columns=cols)
         # Sum in case there are duplicates
         df = pd.pivot_table(
-            df, 
+            df,
             values=[Distribution.P_LABEL],
             index=[v.name for v in variables],
             aggfunc=np.sum,
         )
 
         # Normalize
-        v = df[Distribution.P_LABEL].values
-        v /= v.sum()
+        df[Distribution.P_LABEL] = df[Distribution.P_LABEL] / (
+            df[Distribution.P_LABEL].sum()
+        )
         return Distribution(variables, df)
 
     def __iter__(self):
@@ -173,7 +175,8 @@ class Distribution(object):
                 assignments = {self.variables[0]: indexes}
             else:
                 assignments = dict(
-                    [(v, val) for v, val in zip(self.variables, indexes)])
+                    [(v, val) for v, val in zip(self.variables, indexes)]
+                )
             pr = columns[Distribution.P_LABEL]
             yield assignments, pr
 
@@ -282,8 +285,7 @@ class JointDistByState(JointDist):
     """Construct joint distribution where one state has p=1.0"""
 
     def __init__(self, state_assignments):
-        assignments = dict(
-            [(v, v.with_state(s)) for v, s in state_assignments.items()])
+        assignments = dict([(v, v.with_state(s)) for v, s in state_assignments.items()])
         super(JointDistByState, self).__init__(assignments)
 
 
@@ -317,10 +319,10 @@ class ProbabilityTree(object):
         # TODO: Sort the assignments into something nicer with labels,
         # ordered.
         for b in self.all_branches():
-            print(' ' * b.depth, b.probability, b.assignments)
+            print(" " * b.depth, b.probability, b.assignments)
 
 
-class ProbabilityBranch(object):
+class ProbabilityBranch:
     """The variable assignments and their Conditional probability"""
 
     def __init__(self, tree, parent, prob, assignments=None):
@@ -341,6 +343,7 @@ class ProbabilityBranch(object):
 
         # We're a leaf till this is filled out.
         self.branches = []
+        self.distribution = None
 
     def add_variables(self, assignments):
         for v, dist in assignments.items():
@@ -381,8 +384,7 @@ class ProbabilityBranch(object):
             if prob == 0.0:
                 continue
 
-            self.branches.append(
-                ProbabilityBranch(self.tree, self, prob, assign))
+            self.branches.append(ProbabilityBranch(self.tree, self, prob, assign))
 
     @property
     def is_leaf(self):
@@ -435,8 +437,5 @@ class TreeDistribution(Distribution):
         # have identical states (this happens because the "do" variables
         # filter down the tree and override any local settings).
         self.probabilities = pd.pivot_table(
-            pr,
-            values=[Distribution.P_LABEL],
-            index=ordering,
-            aggfunc=np.sum,
+            pr, values=[Distribution.P_LABEL], index=ordering, aggfunc=np.sum
         )

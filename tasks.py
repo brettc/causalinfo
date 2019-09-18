@@ -4,67 +4,67 @@ import os
 import sys
 
 @task
-def test(cover=False):
+def test(c, cover=False):
     """Run tests (use --cover for coverage tests)"""
     if cover:
-        run('py.test --cov-report term-missing --cov=causalinfo tests', pty=True)
+        c.run('py.test --cov-report term-missing --cov=causalinfo tests', pty=True)
     else:
-        run('py.test -v', pty=True)
+        c.run('py.test -v', pty=True)
 
 @task
-def clean():
+def clean(c):
     """Clean all build and cruft files"""
     print("Removing python cruft ...")
-    run("find . -name '*.pyc' -exec rm -f {} +")
-    run("find . -name '*.pyo' -exec rm -f {} +")
-    run("find . -name '*~' -exec rm -f {} +")
-    run("find . -name '__pycache__' -exec rm -fr {} +")
+    c.run("find . -name '*.pyc' -exec rm -f {} +")
+    c.run("find . -name '*.pyo' -exec rm -f {} +")
+    c.run("find . -name '*~' -exec rm -f {} +")
+    c.run("find . -name '__pycache__' -exec rm -fr {} +")
 
     print("Removing build ...")
-    run("rm -rf build")
-    run("rm -rf dist")
-    run("rm -rf *.egg-info")
+    c.run("rm -rf build")
+    c.run("rm -rf dist")
+    c.run("rm -rf *.egg-info")
 
     print("Removing IPython Notebook checkpoints...")
-    run("find . -name '__pynb_checkpoints__' -exec rm -fr {} +")
+    c.run("find . -name '__pynb_checkpoints__' -exec rm -fr {} +")
 
     print("Removing generated html ...")
-    run("rm -f README.html")
+    c.run("rm -f README.html")
 
-@task 
-def build():
+@task
+def build(c):
     """Build the distribution"""
     print("Building sdist ...")
-    run('python setup.py sdist', hide='out')
+    c.run('python setup.py sdist', hide='out')
     print("Building bdist_wheel ...")
-    run('python setup.py bdist_wheel', hide='out')
+    c.run('python setup.py bdist_wheel', hide='out')
 
 @task
-def publish(release=False):
+def publish(c, release=False):
     """Publish to the cheeseshop."""
     if release:
-        run('python setup.py register')
-        run('twine upload dist/*.tar.gz')
-        run('twine upload dist/*.whl')
+        c.run('python setup.py register')
+        c.run('twine upload dist/*.tar.gz')
+        c.run('twine upload dist/*.whl')
     else:
-        run('python setup.py -r test register')
-        run('twine upload -r test dist/*.tar.gz')
-        run('twine upload -r test dist/*.whl')
+        c.run('python setup.py -r test register')
+        c.run('twine upload -r test dist/*.tar.gz')
+        c.run('twine upload -r test dist/*.whl')
 
 @task
-def readme(browse=True):
+def readme(c, browse=True):
     run('rst2html.py README.rst > README.html')
     if browse:
-        run('open README.html')
+        c.run('open README.html')
 
 @task
-def notebook():
+def notebook(c):
     from IPython.terminal.ipapp import launch_new_instance
     from socket import gethostname
     import warnings
 
     print('Installing in develop mode')
-    run('python setup.py develop', hide='out')
+    c.run('python setup.py develop', hide='out')
 
     print('Changing to notebooks folder')
     here = os.path.dirname(__file__)
@@ -87,4 +87,4 @@ def notebook():
         sys.argv = old_argv
         os.chdir(here)
         print('Removing development package...')
-        run('python setup.py develop -u', hide='out')
+        c.run('python setup.py develop -u', hide='out')
