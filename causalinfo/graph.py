@@ -191,9 +191,9 @@ class CausalGraph(object):
 
         for n in network.nodes():
             if isinstance(n, Variable):
-                network.node[n]['label'] = n.name
+                network.nodes[n]['label'] = n.name
             elif isinstance(n, Equation):
-                network.node[n]['shape'] = 'diamond'
+                network.nodes[n]['shape'] = 'diamond'
 
     def generate_joint(self, root_dist, do_dist=None):
         """Get the joint distribution, given root & do variables"""
